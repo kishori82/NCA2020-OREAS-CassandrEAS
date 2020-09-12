@@ -1,0 +1,148 @@
+\section{Model and Definitions}\label{model}
+A shared atomic storage can be emulated
+by composing individual atomic objects. Therefore, we aim
+to implement \nn{a single} atomic read/write memory object. %on a set of servers.
+\nnrev{Each data}{A read/write} object takes a value from a set $\valSet$. 
+We assume a system consisting of three distinct sets of processes: 
+a set $\wSet$ of writers, a set $\rdSet$ of readers and  $\srvSet$, a set of servers. 
+ Servers host data elements (replicas or encoded data fragments).
+Each writer is allowed to modify the value of a shared object, and each reader is allowed to obtain 
+the value of that object. 
+Processes communicate via \myemph{messages} through 
+\myemph{asynchronous}, \myemph{reliable} channels. 
+%%Let $\idSet = \cSet\cup\reconSet\cup\srvSet$. 
+%In a read/write object implementation, we assume that the object may take a value from a set $\valSet$. 
+%Each writer is allowed to modify the value of the object, and each reader is allowed to obtain 
+%the value of the object. Servers host data elements (replicas or encoded data fragments).
+%%maintain encoded elements of the redundant object.
+%
+%We assume an \myemph{asynchronous} environment, where processes communicate
+%by exchanging messages. The writer, any subset of readers, and up to 
+%$f$ servers may \myemph{crash} without any notice.
+%\ares{} allows the set of server host to be modified during the course of an execution for 
+%masking transient or permanent failures of servers and preserve the longevity of the service.  
+%\kmk{In the paper, we are interested only  in the fair executions of any algorithm.}
+
+
+%we can formally define a quorum system $\quorums{c}$, with $c\in\confSet$, as follows:
+%Consider a configuration identifier $c$.
+%We define as $\servers{c}=\bigcup_{Q\in\quorums{c}} Q$ the set of servers that belong in the quorums
+%f a quorum system $\quorums{c}$. 
+%We refer to a server $s$ as a \myemph{member} of a configuration $c$ if $s\in \servers{c}$.
+
+%
+%\paragraph{Notations and Definitions}  We denote by $\mathcal{W}$, $\mathcal{R}$ and $\mathcal{S}$,  the set of writers, readers and servers, respectively.
+%We denote by $\confSet$ the set of possible configurations of the systems. A configuration $c \in \confSet$ has a unique the configuration identifier   $c.conf$; a set of servers $c.servers$, such that, $c.Servers \subseteq \mathcal{S}$,
+%$cseq[i].status\in\{F,P\}$, the pending or finalized status 
+
+%The writer process $w$ may invoke write operations on the atomic object 
+%by calling the $\act{write}(v)$ function whereas each reader may invoke 
+%a read operation by calling the $\act{read}$ function. Each write event 
+%returns an acknowledgement when successfully carried-out, whereas each read 
+%operation returns the value of the atomic object. We assume that an 
+%
+
+\myparagraph{Executions.} 
+%An algorithm $A$ is a collection of processes, where process $A_p$
+%is assigned to processor $p\in\idSet\cup\srvSet$. The \textit{state}, of a process $A_\pr$ is determined over a
+%set of state variables, and the state $\state$ of $A$ is a vector that contains the state of
+%each process. Each process $A_\pr$ implements a set of actions. When an action $\acts{}$ occurs 
+%it causes the state of $A_\pr$ to change, say from 
+%some state $\state_p$ to some different state $\state_p'$. We call the triple $\tup{\state_p, \acts{}, \state_p'}$
+%as a \textit{step} of $A_\pr$. Algorithm $A$ performs a step, when some process $A_\pr$ performs a step.
+%: (i) receives a
+%message, (ii) performs local computation, (iii) sends a message. 
+%Each such action
+%causes the state at $p$ to change. 
+An \textit{execution} of an algorithm $A$  is an alternating sequence of states
+and actions of $A$ starting with the initial state and ending in a state. 
+An execution $\EX$ is \textit{well-formed} if any process invokes one operation
+at a time and it is \textit{fair} if enabled actions perform a step infinitely often. In the rest of the paper 
+we consider executions that are fair and well-formed. A process
+$\pr$ \textit{crashes} in an execution if it stops taking steps; otherwise $p$ is \textit{correct} or \textit{non-faulty}.
+
+
+\myparagraph{Write and Read Operations.}
+An implementation of a read or a write operation contains an \textit{invocation} action  and a \textit{response} action (such as a
+	return from the procedure). An operation $\op$ is \textit{complete} in an execution, if it
+	contains both the invocation and the \textit{matching} response actions for $\op$; otherwise $\op$
+	is \textit{incomplete}. 
+	We say that an operation $\op$ \textit{precedes} an operation $\op'$ in an execution $\EX$,
+	denoted by $\op\bef\op'$, if the response step of $\op$ appears before the invocation
+	step of $\op'$ in $\EX$. Two operations are \textit{concurrent} if neither precedes the other.
+	An implementation $A$ of a read/write object satisfies the atomicity property
+	if the conditions of Lemma 13.16 in  \cite{Lynch1996} holds. 
+	
+\myparagraph{Storage and Communication Costs.} 
+\remove{We are interested in the \myemph{complexity} of each
+read and write operation. The complexity of each operation $\op$ invoked by a process 
+$\pr$, is measured with respect to three metrics, during the interval between the invocation 
+and the response of $\op$: (i) \myemph{communication round-trips}, accounting the number of messages 
+sent during $\op$, (ii) \myemph{storage efficiency} \nn{(storage cost)}, accounting the maximum storage requirements for 
+any single object at the servers during $\op$, and  (iii) \myemph{message bit complexity} \nn{(communication cost)}
+which measures the size of the messages used during $\op$. 
+}
+We define the total storage cost as the size of the
+data stored across all servers, at any point during the execution of the algorithm. The
+communication cost associated with a read or write operation is the size of the total data that
+gets transmitted in the messages sent as part of the operation. We assume that metadata,
+such as version number, process ID, etc. used by various operations is of negligible size, and therefore,  ignore in the calculation of storage and communication cost. Further, we normalize
+both the costs with respect to the size of the value v; in other words, we compute the costs
+under the assumption that v has size 1 unit.
+
+ \myparagraph{{\bf Erasure Codes}.} In \treasmod{}, we use an $[n, k]$  linear MDS code ~\cite{verapless_book} over a finite field $\mathbb{F}_q$ to encode and store the value $v$ among the $n$ servers. An $[n, k]$ MDS code has the property that any $k$ out of the $n$ coded elements can be used to recover (decode) the value $v$. 
+ For encoding, $v$ is divided\footnote{In practice $v$ is a file, which is divided into many stripes based on the choice of the code, various stripes are individually encoded and stacked against each other. We omit details of represent-ability of $v$ by a sequence of symbols of $\mathbb{F}_q$, and the mechanism of data striping, since these are fairly standard in the coding theory literature.} into $k$ elements $v_1, v_2, \ldots v_k$ with each element having  size $\frac{1}{k}$ (assuming size of $v$ is $1$). The encoder takes the $k$ elements as input and produces $n$ coded elements $c_1, c_2, \ldots, c_n$ as output, i.e., $[c_1, \ldots, c_n] = \Phi^{(n,k)}([v_1, \ldots, v_k])$, where $\Phi^{(n, k)}$ denotes the encoder. For ease of notation, we simply write $\Phi^{(n, k)}(v)$ to mean  $[c_1, \ldots, c_n]$. The vector $[c_1, \ldots, c_n]$ is  referred to as the codeword corresponding to the value $v$. Each coded element $c_i$ also has  size $\frac{1}{k}$. In our scheme we store one coded element per server. We use $\Phi^{(n, k)}_i$ to denote the projection of $\Phi^{(n, k)}$ on to the $i^{\text{th}}$ output component, i.e., $c_i = \Phi^{(n, k)}_i(v)$. Without loss of generality, we associate the coded element $c_i$ with server $i$, $1 \leq i \leq n$.  Below, when the dimension of the MDS code is clear we omit the code parameter $\Phi^{(n, k)}(\cdot)$ to write simply as $\Phi(\cdot)$. 
+ 
+\myparagraph{Quorum system}. We define our quorum system, $\mathcal{Q}$, to be
+the set of all subsets of $\mathcal{S}$  that have at least $\frac{n+k}{2}$ servers. 
+ We refer to the members of $\mathcal{Q}$, as quorum
+sets and they satisfy the following
+property
+
+\begin{lemma}
+For any $k$,  $1 \leq k \leq n -2f$. (i) If $Q_1$ ,$Q_2 \in \mathcal{Q}$,
+then $|Q_1 \cap Q_2 | \geq k$. (ii) If the number of failed servers is
+at most $f$ , then $Q$ contains at least one quorum set $Q$ of
+non-failed servers.
+\end{lemma}
+%\myparagraph{Storage and Communication Cost.} We define the total storage cost as the size of the
+%data stored across all servers, at any point during the execution of the algorithm. The
+%communication cost associated with a read or write operation is the size of the total data that
+%gets transmitted in the messages sent as part of the operation. We assume that metadata,
+%such as version number, process ID, etc. used by various operations is of negligible size, and
+%is hence ignored in the calculation of storage and communication cost. Further, we normalize
+%both the costs with respect to the size of the value v; in other words, we compute the costs
+%under the assumption that v has size 1 unit.
+
+%A communication round-trip
+%(or simply round) is more formally defined in the following definition that appeared in \cite{CDGL04,GNS09,GNS08}:
+
+%\begin{definition}\label{def:com}
+%Process $p$ performs a communication round during operation $\op$ 
+%if all of the following hold:
+%\begin{enumerate}
+%   \item $p$ sends request messages that are a part of $\op$ 
+%         to a set of processes,
+%	\item any process $q$ that receives a request message from $p$ for 
+%         operation $\op$, replies
+%% to it with an acknowledgment 
+%%         message, at the first possible convenience and 
+%without delay, i.e. without waiting for any other messages before 
+%replying to $\op$.
+%   \item when process $p$ receives ``enough'' replies it 
+%terminates the round
+%%, orreturns or repeats a communication round
+%         %then makes a local decision about termination of the phase.
+%\end{enumerate}
+%\end{definition}
+%
+%At the end of a communication round process $\pr$ may complete $\op$
+%or start a new round. Operation $\op$ is \myemph{fast} \cite{CDGL04} if it completes after 
+%its first communication round; an implementation is fast if in each execution
+%all operations are fast.
+
+\myparagraph{Liveness of operations.} We require algorithms to satisfy certain liveness properties, specifically, in every fair execution that satisfies certain restrictions in terms of the number of failed nodes, we require every operation by a non-faulty client 
+completes, irrespective of the behavior of other clients.  
+Although most replication-based based atomic memory algorithm guarantee liveness as long as certain no of servers remain 
+non-faulty.  Unfortunately, certain lower bounds on the storage-cost of erasure-coded atomic memory algorithm in the presence of faulty clients ~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume certain restricting 
+assumption.  CASGC, ORCAS-A and ORCAS-B assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 
