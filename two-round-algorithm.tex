@@ -1,0 +1,346 @@
+\section{\treasmod: Storage-optimized two-round algorithm}\label{sec:treasmod}
+
+\lewis{Do we need to say TREAS-OPT? Since TREAS is referred to your previous algorithm? Some links are missing here.}
+
+In this section,  we present  \treasmod{}. The pseudo-code for  ~\treasmod{} is presented in  Alg.~\ref{fig:treasmod}. 
+% However, liveness is  guaranteed under the assumption that the number of write operations concurrent with a read  operation is at most $\delta$. The precise definition of concurrency depends on the algorithm itself, and appears later in this section. The \treasmod{}~algorithm has significantly reduced storage and communication cost, compared to replication, when $\delta$ is limited.
+%Expressing an atomic algorithm in terms of the DAP primitives serves multiple purposes.
+%First, describing an algorithm according to template algorithm $A_1$  allows one to proof
+%that the algorithm is \textit{safe} (atomic) 
+%% it enables ease of reasoning about the safety of the algorithm  
+%% given that atomicity holds if 
+%by just showing that the appropriate DAP properties hold, and the algorithm is \textit{live} if the 
+%implementation of each primitive is live. 
+%Secondly, the safety and liveness proofs for more complex algorithms (like \ares{} in Section \ref{sec:ares}) % algorithm  
+%become easier as one may reason on the DAP properties that are satisfied by the primitives used,
+%without involving the underlying implementation of those primitives. 
+%Moreover, describing a reconfiguration algorithm using DAPs, provides the flexibility 
+%to vary the  implementations DAPs from configuration to configuration, as long as the DAPs satisfy certain  properties. 
+%%
+%%is easier where  complex operations like reconfiguration is done, where the implementation of data-access primitives can vary from one configuration to another,  while
+%%hiding the details of the underlying atomic algorithm implementation. 
+%%
+%%
+%%As we show 
+%%In Section \ref{sec:algorithm}, we discuss how \ares{} may change the primitives mechanisms
+%%such data access primitives allows us to design 
+%%a reconfigurable atomic storage service that can utilize different atomic implementation 
+%%in each established configuration without affecting the safety guarantees of the service.
+%%Such approaches can adapt to the configuration design, and vary the performance of the service
+%%based on the environmental conditions.
+%% In other words, ABD \cite{ABD96} can be used for 
+%%maximum fault tolerance and when majority quorums are used, whereas fast algorithms 
+%%similar to the ones presented in \cite{CDGL04, FNP15}, could be used in configurations 
+%%that satisfy the appropriate participation bounds. 
+%
+%{\color{blue}
+\treasmod{} is parameterized by the number of servers $n$, the quorum intersection size $k$, and the degree of concurrency that can be tolerated $\delta$. Note that $k$ does not represent the dimension of the code here. 
+%
+The algorithm uses an MDS code, with encoding function $\Phi^{(n,\ell)}: \mathbb{F}^{\ell} \rightarrow \mathbb{F}^{n}$ where, $\mathbb{F}$ represents the finite field over which encoding is performed, $n$ represents the length of the code, and $\ell = {\lceil \frac{k}{\delta+1} \rceil} $ represents the dimension of the code. 
+
+A tag $\tg{}$ is defined as a pair $(z, w)$, where $z \in \mathbb{N}$ and $w \in \mathcal{W}$, an ID of a writer.
+Let $\mathcal{T}$ be the set of all tags.
+Notice that tags could be defined in any totally ordered domain and given that this domain is countably infinite, then 
+there can be a direct mapping to the domain we assume. 
+% and we denote by  $\mathcal{T}$  the set of all possible tags. 
+For any  $\tg{1}, \tg{2} \in \mathcal{T}$ we define  $\tg{2} > \tg{1}$ if $(i)$ $\tg{2}.z > \tg{1}.z$ or $(ii)$ $\tg{2}.z = \tg{1}.z$ and $\tg{2}.w > \tg{1}.w$.
+
+
+\treasmod{}  shares some similarities with ABD as well as TREAS. Specifically, in \treasmod{}, like TREAS, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$ is garbage collected, the server stores a tuple of the form $(t, \bot)$. However, unlike TREAS, in \treasmod{} each server stores only coded element, similar to ABD. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however the server will continue to store a tuple of the form $(\tau_{max},\bot)$.
+
+While in TREAS, each server stores $\delta+1$ coded elements of a code with dimension $k$, in \treasmod{}, each server stores \emph{one} coded element of dimension ${\lceil \frac{k}{\delta+1} \rceil}$. Since the size of each coded element is effectively a fraction $\frac{1}{k}$ the size of the value, the server storage cost in TREAS normalized by the size of the object is $\frac{\delta+1}{k},$ whereas the storage cost of \treasmod{} is $\frac{1}{\lceil \frac{k}{\delta+1}\rceil}$  since 
+$  \frac{\delta+1}{2 k} < \frac{1}{\lceil \frac{k}{\delta+1}\rceil} \leq \frac{\delta+1}{k}$
+the storage cost of \treasmod{} is no worse than the storage cost of TREAS, and can be up to twice as efficient. For instance, if we have $n=9$ servers, and we use quorums of size $6$ so that $k=3$, for a concurrency of $\delta=1$, the storage cost of TREAS is $2/3$, whereas the cost of \treasmod{} is $\frac{1}{2}.$ For the same system, if quorums of size $7$ are used, and a concurrency can be bounded by $\delta=3$, then the storage cost of TREAS is $4/5=0.8$ whereas \treasmod{} has a storage cost of $1/2=0.5$. 
+
+The main technical aspect in which {\treasmod} differs with, in terms of correctness, in comparison with {\treas} is the liveness proof. We argue that despite the changes, {\treasmod} guarantees termination of every read operation whose concurrency is below $\delta$.
+%} 
+
+%\remove{
+\begin{algorithm*}[!ht]
+				\begin{algorithmic}[2]
+					{\footnotesize
+					\begin{multicols}{2}
+				
+				\Statex /* at reader $r$ */
+				\Operation{read}{} 
+				%\State $wCounter\gets wCounter+1$
+				\State $\tup{t_r, v} \gets \dagetdata{c}$
+				\State $\daputdata{c}{ \tup{t_r,v}}$
+				\State return $v$
+				\EndOperation
+				\Statex
+				\Statex /* at writer $w$ */
+				\Operation{write}{$v$} 
+				%\State $wCounter\gets wCounter+1$
+				\State $t_{max} \gets \dagettag{c}$
+				\State $t_w \gets (t_{max}.z+1, w)$
+				\State $\daputdata{c}{\tup{t_w,v}}$
+				\EndOperation
+							\State{ at each process $\pr_i\in\idSet$}
+	
+							\Statex
+							\Procedure{get-tag}{}
+							%	\State {\bf send} $(\text{\act{query}},\rdr)$ to every server $s\in \bigcup_{cseq[i]}members(\qs_{cseq[i].conf})$
+							\State {\bf send} $(\text{{\sc query-tag}})$ to each  $s\in \mathcal{S}$
+							\State {\bf until}  receives $\tup{t_s,e_s}$ from $\left\lceil \frac{n + k}{2}\right\rceil$ servers
+							\State $t_{max} \gets \max(\{t_s : \text{ received } \tup{t_s,v_s} \text{ from } s \})$
+							\State {\bf return} $t_{max}$
+							\EndProcedure
+							
+							\Statex
+							
+							\Procedure{get-data}{}
+							%	\State {\bf send} $(\text{{\sc query}},\rdr)$ to every server $s\in \bigcup_{cseq[i]}members(\qs_{cseq[i].conf})$
+								\State {\bf send} $(\text{{\sc query-list}})$ to each  $s\in \mathcal{S}$
+								\State {\bf until}  receives $List_s$ from each server $s\in\srvSet_g$ s.t. $|\srvSet_g|=\left\lceil \frac{n + k}{2}\right\rceil$ 
+								\State  $Tags_{*}^{\geq k} = $ set of tags that appears in  $k$ lists	\label{line:getdata:max:begin}
+								\State  $Tags_{dec}^{\geq \ell} =$ tags appearing in $\ell$ lists with values
+								\State  $t_{max}^{*} \leftarrow \max Tags_{*}^{\geq k} $
+                                \State  $t_{max}^{dec} \leftarrow \max Tags_{dec}^{\geq \ell} $ \label{line:getdata:max:end}
+								\If{ $t_{max}^{dec} \geq  t_{max}^{*}$} 
+								    \State  $v \leftarrow $ decode value for $t_{max}^{dec}$
+								\EndIf
+								%\State $List_M \triangleq \bigcup_{s \in \srvSet_g}  List_s$
+								%$\State  $\forall t$, $List_M(t) \triangleq \{ (t, v): (t,v) \in List_M \}$  
+								%\State $\forall t$, $T(t') \triangleq \{t: (t,v) \in List_M(t) \wedge t \geq t' \}$
+								%\State $t_r \gets \max \{t : (t, *) \in List_M ~\wedge |List_M(t)| \geq k~\wedge |T(t)| \leq \delta \}$
+								%\State $v_s\gets \text{decode from }  List_M(t_{r}))$
+								\State {\bf return} $\tup{t^{dec}_{max},v}$
+							\EndProcedure
+							
+							\Statex				
+							
+							\Procedure{put-data}{$\tup{\tg{},v})$}
+								\State $\Coded = [(\tg{}, e_1), \ldots, (\tg{}, e_n)]$, $e_i = \Phi_i(v)$
+								\State {\bf send} $(\text{{\sc write}}, \tup{\tg{},e_i})$ to each $s_i \in \mathcal{S}$
+								\State {\bf until}  receives {\sc ack} from $\left\lceil \frac{n + k}{2}\right\rceil$ servers
+							\EndProcedure
+							%\EndPart
+							
+							
+							
+%							\Part{write($v$)}\EndPart
+%							\Part{\underline{\GetTag}} {
+%								\State  Send  $(\QueryTag)$ to all servers $\mathcal{S}$.
+%								\State  Await responses from majority
+%								\State  Select the max tag  $t^*$
+%							}\EndPart
+%							\Statex
+%							\Part{\underline{\PutData}} {
+%								\State $t_w = (t^{*}.z + 1, w)$.  
+%								\State $\Coded = [(t_w, c_1), \ldots, (t_w, c_n)]$, $c_i = \Phi_i(v)$
+%								\State Send  $(\CodedElementTag, \Coded)$ to all servers $\mathcal{S}$.
+%								\State Terminate after $\left\lceil \frac{n + k}{2}\right\rceil$ acks
+%							}	\EndPart
+							
+%							\Statex
+%							\Part{read}\EndPart
+%							\Part{\underline{\GetData}} {
+%								\State  Send $(\QueryList)$ to all servers $\mathcal{S}$.
+%								\State  Wait for $\left\lceil \frac{n+k}{2}\right\rceil$ $Lists$ 
+%								\State  Select the max tag, $t_r$, the corresponding value, $v_r$, is decodable using the $Lists$; additionally   $t_r$ is among the highest distinct $\delta$ tags received in any $Lists$.
+%							}\EndPart	
+%							\Statex
+%							\Part{\underline{\PutData}} {
+%								\State $\Coded = [(t_r, c_1), \ldots, (t_r, c_n)]$, $c_i = \Phi_i(v_r)$
+%								\State Send $(\CodedElementTag, \Coded)$ to all servers $\mathcal{S}$.
+%								\State Wait for $\left\lceil \frac{n + k}{2}\right\rceil$ acks
+%								\State Return $v_r$
+%							}	\EndPart
+%							
+%							
+					\end{multicols}
+				}
+				\end{algorithmic}	
+				\caption{The the steps for  implementing \treasmod{}.}\label{fig:treasmod}
+				\vspace{-1em}
+	\end{algorithm*}
+		
+
+	\begin{algorithm*}[!ht]
+	\begin{algorithmic}[2]
+		{\footnotesize
+		\begin{multicols}{2}
+				\State{at each server $s_i \in \mathcal{S}$}
+				\Statex
+				\State{\bf State Variables:}%{ 										
+					%\Statex $(t_{loc}, v_{loc}) \in \mathcal{T} \times {\mathcal V}$, initially   $(t_0, v_0)$
+					%\Statex $status \in \{active, repair\}$, initially $active$
+					\Statex $List \subseteq  \mathcal{T} \times \mathcal{C}_s$, initially   $\{(t_0, \Phi_i(v_0))\}$
+				%}\EndPart
+			
+			\Statex
+			\Receive{{\sc query-tag}}{$s_i,c_k$}
+				\State $\tg{max} = \max_{(t,c) \in List}t$
+				\State Send $\tg{max}$ to $q$
+			\EndReceive
+			\Statex
+	
+			
+			\Receive{{\sc query-list}}{$s_i,c_k$}
+				\State Send $List$ to $q$
+			\EndReceive
+\State
+			\Receive{{\sc put-data}, $\tup{\tg{},e_i}$}{$s_i,c_k$}
+			%{\color{blue}
+				\State $\tg{max} = \max_{(t,c) \in List}t$
+
+				\If{$\tg{} \geq \tg{max}$}   \label{line:treasmod:monotone:begin}
+					\State $List \gets List \backslash \{\tup{\tg{max},e_i}:  \tup{\tg{max},e_i} \in List\}$ 
+					\State $List \gets List \cup \{\tup{\tg{},e_i}, \tup{\tg{max},\bot}\}$
+				\Else
+					\State $List \gets List \cup \{\tup{\tg{},\bot}\}$ \label{line:treasmod:monotone:end}
+                                   \EndIf %}
+
+								\State  Send {\sc ack} to $q$
+			\EndReceive
+			
+%				\Statex
+%				\Part {\underline{\GetTagResp,recv $\QueryTag$ from writer $w$}} {
+%					%\If{ $status = active$ }
+%					\State $t^* = \max_{(t,c) \in List}t$
+%					\State Send $t^*$ to $w$
+%					\Statex %\EndIf
+%				}\EndPart
+%				%										\Statex
+%				\Part {\underline{\GetDataResp, recv $\QueryList$ from reader $r$}} {
+%					%\If{ $status = active$ }
+%					\State Send  $List$ to $r$
+%					%\EndIf
+%				}\EndPart
+%				%	
+%				\Statex
+%				\Part{ \underline{\PutDataResp, recv $\CodedElementTag, (t, c_i)$ from $p$ }}{
+%					%\If{$status = active$}
+%					\State $List \leftarrow List \cup \{ (t, c_i)  \}$ 
+%					\If{ $|List| > \delta + 1$ } 
+%					\State  Retain the (tag, coded-element) pairs for the $\delta +1 $ highest tags in $List$, and delete the rest.
+%					\EndIf 
+%					\State  Send ack to $p$.
+%					%\EndIf
+%					
+%				}\EndPart
+				\end{multicols}
+			}
+	\end{algorithmic}	
+	\caption{The response protocols at  any server $s_i \in {\mathcal S}$ in  
+					\treasmod{} for client requests.}\label{fig:treasmod:server}
+					\vspace{-1em}
+\end{algorithm*}	
+%}
+
+\myparagraph{Safety and  Liveness  properties}\label{sec:treas_safety_liveness}
+Now we state the safety  and liveness properties of \treasmod. Due to lack of space the proofs are deferred for a later extended version of the paper.
+
+\remove{						
+ \begin{lemma}\label{casflex:data-access:consistent}
+The data-access primitives, i.e., $\act{get-tag}$, $\act{get-data}$ and $\act{put-data}$ primitives, implemented in the \treasmod{} algorithm satisfy the consistency properties.
+\end{lemma}
+}
+
+\remove{
+\begin{proof}
+As mentioned above we are concerned with only configuration $c$, and therefore, in our proofs we will be concerned with only one
+configuration. Let $\alpha$ be some execution of \treasmod{}, then we consider two cases for $\pi$ for proving property $C1$:  $\pi$ is a  $\act{get-tag}$ operation, or $\pi$ is a $\act{get-data}$ primitive. 
+
+ %\item[ C1 ]  If $\phi$ is a  $\daputdata{c}{\tup{\tg{\phi}, v_\phi}}$, for $c \in \confSet$, $\tg{1} \in\tsSet$ and $v_1 \in \valSet$,
+ %and $\pi$ is a $\dagettag{c}$ (or a $\dagetdata{c}$) 
+
+ %that returns $\tg{\pi} \in \tsSet$ (or $\tup{\tg{\pi}, v_{\pi}} \in \tsSet \times \valSet$) and $\phi$ completes before $\pi$ in $\EX$, then $\tg{\pi} \geq \tg{\phi}$.
+Case $(a)$: $\phi$ is   $\daputdata{c}{\tup{\tg{\phi}, v_\phi}}$ and  $\pi$ is a $\dagettag{c}$ returns $\tg{\pi} \in \tsSet$. Let $c_{\phi}$ and $c_{\pi}$ denote the clients that invokes $\phi$ and $\pi$ in $\alpha$. Let $S_{\phi} \subset \mathcal{S}$ denote the set of $\left\lceil \frac{n+k}{2} \right \rceil$ servers that responds to $c_{\phi}$, during $\phi$. Denote by $S_{\pi}$ the set of $\left\lceil \frac{n+k}{2} \right \rceil$ servers that responds to $c_{\pi}$, during $\pi$.  Let $T_1$ be a point in execution $\alpha$ 
+after the completion of $\phi$ and before the invocation of $\pi$. Because $\pi$ is invoked after $T_1$, therefore, at $T_1$ each of the servers in $S_{\phi}$ contains $t_{\phi}$ in its $List$ variable. Note that, once a tag is added to $List$, it is never removed. Therefore, during $\pi$, any server in $S_{\phi}\cap S_{\pi}$ responds with $List$ containing $t_{\phi}$ to $c_{\pi}$. Note that since  $|S_{\sigma^*}| = |S_{\pi}| =\left\lceil \frac{n+k}{2} \right \rceil $ implies
+				 $| S_{\sigma^*} \cap S_{\pi} | \geq k$, and hence $t^{dec}_{max}$ at $c_{\pi}$, during $\pi$ is at least as large as $t_{\phi}$, i.e., $t_{\pi} \geq t_{\phi}$. Therefore, it suffices to to prove our claim with respect to the tags and the decodability of  its corresponding value.
+
+
+Case $(b)$: $\phi$ is   $\daputdata{c}{\tup{\tg{\phi}, v_\phi}}$ and  $\pi$ is a $\dagetdata{c}$ returns $\tup{\tg{\pi}, v_{\pi}} \in \tsSet \times \valSet$. 
+As above, let $c_{\phi}$ and $c_{\pi}$ be the clients that invokes $\phi$ and 
+$\pi$. Let $S_{\phi}$ and $S_{\pi}$ be the set of servers that responds to $c_{\phi}$ and $c_{\pi}$, respectively. Arguing as above, 
+ $| S_{\sigma^*} \cap S_{\pi} | \geq k$ and every server in  $S_{\phi} \cap S_{\pi} $ sends $t_{\phi}$ in response to $c_{\phi}$, during 
+ $\pi$, in their $List$'s and hence $t_{\phi} \in Tags_{*}^{\geq k}$. Now, because $\pi$ completes in $\alpha$, hence we have 
+ $t^*_{max} = t^{dec}_{max}$. Note that $\max Tags_{*}^{\geq k} \geq \max Tags_{dec}^{\geq k}$ so 
+  $t_{\pi} \geq \max Tags_{dec}^{\geq k} = \max Tags_{*}^{\geq k} \geq t_{\phi}$. Note that each tag is always associated with 
+  its corresponding value $v_{\pi}$, or the corresponding coded elements $\Phi_s(v_{\pi})$ for $s \in \mathcal{S}$.
+
+Next, we prove the $C2$ property of DAP for the \treasmod{} algorithm. Note that the initial values of the $List$ variable in each servers $s$ in $\mathcal{S}$ is 
+$\{ (t_0, \Phi_s(v_{\pi}) )\}$. Moreover, from an inspection of the steps of the algorithm, new tags in the $List$ variable of any servers of any servers is introduced via $\act{put-data}$ operation. Since $t_{\pi}$ is returned by a $\act{get-tag}$ or 
+$\act{get-data}$ operation then it must be that either $t_{\pi}=t_0$ or $t_{\pi} > t_0$. In the case where $t_{\pi} = t_0$ then we have nothing to prove. If $t_{\pi} > t_0$ then there must be a $\act{put-data}(t_{\pi}, v_{\pi})$ operation $\phi$. To show that for every $\pi$ it cannot be that $\phi$ completes before $\pi$, we adopt by a contradiction. Suppose for every $\pi$, $\phi$ completes before $\pi$ begins, then clearly $t_{\pi}$ cannot be returned $\phi$, a contradiction.
+\end{proof}
+}			
+	
+				\begin{theorem}[Atomicity]  \label{thm:atomicity_radonc}
+					Any well-formed and fair execution of \treasmod{}  is atomic.
+				\end{theorem}
+	
+			\begin{proof}
+Consider any well-formed execution $\beta$ of \treasmod, all of whose invoked read or write operations complete. Let $\Pi$ denote the set of all completed read and write operations in $\beta$. We first define a partial order ($\prec$) on $\Pi$. 
+For any completed write operation $\pi$, we define $tag(\pi)$ as the variable  $t_w$. For any complete read operation $\pi$, we define $tag(\pi)$ as the value of $t_r$. 
+Now, in $\Pi$ the relation $\prec$ is defined as follows: For any $\pi, \phi \in \Pi$, we say $\pi \prec \phi$  if 
+one of the following holds: $(i)$  $tag(\pi)  < tag(\phi)$, or $(ii)$ $tag(\pi) = tag(\phi)$, and  $\pi$ and $\phi$ are write and read 
+operations, respectively. The proof of atomicity is based on proving 				
+ the properties $P1$, $P2$ and $P3$. Let $\phi$ and $\pi$ denote two operations in $\Pi$ such that $\phi$ completes before $\pi$ starts in $\beta$.  Let  $c_{\phi}$ and $c_{\pi}$ denote the clients that invokes $\phi$ and $\pi$, respectively. 
+
+\emph{Property $P1$} We want to show that $\pi \not\prec \phi$. Below we consider the four possible cases of $\phi$ and $\pi$.
+
+\emph{ $\phi$, $\pi$ are writes:} It is enough to prove that $tag(\pi) > tag(\phi)$. Consider the $\act{put-data}$ phase of $\phi$, where the writer $c_{\phi}$  sends the pair $(t_w, v)$ to all 
+servers in $\mathcal{S}$. Let us denote the  set $\mathcal{S}_{\phi}$ of $\left\lceil \frac{n+k}{2} \right\rceil$ servers  that responds to $c_{\phi}$ during the \act{put-data} phase.  
+Now, observe that the maximum tag in any server's $List$ is monotonically non-decreasing, because in algorithm $B$  
+any server add tags to  $List$  only in lines 
+Alg.~\ref{fig:treasmod:server}:\ref{line:treasmod:monotone:begin}--\ref{line:treasmod:monotone:end}.  Once added, a tag is never removed from $List$.
+Therefore, at  each server in $S_{\phi}$ the maximum tag in $List$ at the time of 
+sending the responses to $c_{\phi}$ in the \act{put-data}  phase is at least $tag(\phi)$ 
+ Now, suppose $S_{\pi}$ be 
+the set of $\lceil \frac{n+k}{2} \rceil$ servers that responds to $c_{\pi}$ during the \act{get-tag} phase of $\pi$. 
+ Therefore, at the point of the execution when $\pi$ is invoked, the maximum
+tag in  $List$ of each server is at least $tag(\phi)$. Since $|S_{\phi}| = | S_{\pi}| = \lceil \frac{n+k}{2} \rceil$  hence 
+$S_{\phi} \cap S_{\pi} \neq \emptyset $. Therefore, there is at least one of the  responses from the servers in the \act{get-tag}
+(see lines Alg.~\ref{fig:treas:server}:\ref{line:gettag:max}) has a tag at least $tag(\phi)$. So, the $t_w$ is greater than $tag(\phi)$. So $tag(\pi) \geq t_w > tag(\phi)$ hence, $\pi \not\prec \phi$.
+ 
+\emph{ $\phi$ is a read, $\pi$ is a write:}
+By virtue of the definition of $\prec$, it is enough to prove that $tag(\pi) \geq tag(\phi)$.  The rest of the argument is very similar to the previous case.
+
+\emph{ $\phi$ is a write, $\pi$ is a read:}
+This  is very similar to the same case in the proof of Theorem~\ref{thm:atomicity:treas}.
+
+
+\emph{ $\phi$, $\pi$ are reads:}
+This  is very similar to the same case in the proof of Theorem~\ref{thm:atomicity:treas}.
+
+\emph{Property $P2$} This follows from the construction of tags, and the definition of the partial order ($\prec$).
+
+\emph{Property $P3$} This follows from the definition of partial order ($\prec$), and by noting that value returned by a read operation $\pi$ is simply the value associated with $tag(\pi)$.
+%
+				\end{proof}
+				
+			
+			\remove{	The above definition captures all the write operations that overlap with the read, until the time the reader has all data needed to attempt decoding a value. However, we ignore those write operations that might have started in the past, and never completed yet, if their tags are less than that of any write that completed before the read started. This allows us to ignore write operations due to failed writers, while counting concurrency, as long as the failed writes are followed by a successful write that completed before the read started. }
+				\begin{theorem}[Liveness]  \label{thm:liveness_radonc}
+					Let $\beta$ denote a well-formed and fair execution of \treasmod{} with parameters $[n, k, \delta]$ over a system of $n$ servers. If the number of write operations that are with any valid read  operation in $\beta$ bounded by $\delta,$ and the number of server failures is bounded by $\lceil \frac{n+k}{2}\rceil-1,$ then every operation in $\beta$ terminates. 
+				\end{theorem}
+				\begin{proof}
+				Note that in the read and write operation the  $\act{get-tag}$ and $\act{put-data}$ operations initiated by any non-faulty client  always complete.
+				Therefore, the liveness property with respect to any write operation is clear because it uses only  $\act{get-tag}$ and $\act{put-data}$ operations of the DAP. So, we focus on proving the liveness property of any read operation $\pi$, 
+				specifically,   the  $\act{get-data}$ operation completes. Let $\alpha $ be and execution of \treasmod{} and let 
+				$c_{\sigma^*}$ and $c_{\pi}$ be the clients that invokes the write operation $\sigma^*$ and 
+				read operation $c_{\pi}$, respectively.
+				
+				Let $S_{\sigma^{*}}$ be the set of 
+				$\left\lceil \frac{n+k}{2} \right \rceil$ servers that responds to 
+				$c_{\sigma^*}$, in the $\act{put-data}$ operations, in $\sigma^*$.
+				 Let $S_{\sigma^{\pi}}$ be the set of $\left\lceil \frac{n+k}{2} \right \rceil$ servers that responds to  $c_{\pi}$ during the  $\act{get-data}$ step of $\pi$. Note that in $\alpha$ at the point execution $T_1$, just before the execution of  $\pi$, none of the the write operations in 
+				 $\Lambda$ is complete. Observe that,  by algorithm design, the coded-elements corresponding to  $t_{\sigma^*}$ are garbage-collected from the $List$ variable of a server only if more than $\delta$ higher tags are introduced by subsequent writes into the server.  Since the number of concurrent writes  $|\Lambda|$, s.t.  $\delta > | \Lambda |$ the corresponding value of tag $t_{\sigma^*}$ is not garbage collected in $\alpha$, at least until execution point $T_2$  in  any of the servers in $S_{\sigma^*}$.
+				 
+				 Therefore, during the execution fragment between the execution points $T_1$ and $T_2$ of the execution $\alpha$, the tag and coded-element pair is present in the $List$ variable of every in $S_{\sigma^*}$ that is active. As a result, the tag and coded-element pairs, $(t_{\sigma^*}, \Phi_s(v_{\sigma^*}))$ exists in the $List$ received from any
+				  $s \in S_{\sigma^*} \cap S_{\pi}$ during operation $\pi$. Note that since $|S_{\sigma^*}| = |S_{\pi}| =\left\lceil \frac{n+k}{2} \right \rceil $ hence
+				 $| S_{\sigma^*} \cap S_{\pi} | \geq k$ and hence 
+				 $t_{\sigma^*} \in Tags_{dec}^{\geq k} $, the set of decodable tag, i.e., the value $v_{\sigma^*}$ can be decoded
+				  by $c_{\pi}$ in $\pi$, which demonstrates that $Tags_{dec}^{\geq k}  \neq \emptyset$. Next we want to 
+				  argue that 
+				  $t_{max}^* = t_{max}^{dec}$ via a contradiction: we assume 
+				  $ \max Tags_{*}^{\geq k}  >  \max Tags_{dec}^{\geq k}  $. Now, consider any tag $t$, which  exists due to our assumption,  such that, 
+				  $t \in Tags_{*}^{\geq k} $,  $t \not\in Tags_{dec}^{\geq k} $ and $t > t_{max}^{dec}$.
+			%	 
+				 Let $S^k_{\pi} \subset S$ be any subset of $k$ servers that responds with $t^*_{max}$ in their $List$ variables to $c_{\pi}$. Note that since $k >  n/3$ hence $|S_{\sigma^*} \cap S_{\pi}|  \geq \left\lceil \frac{n+k}{2} \right \rceil +  \left\lceil \frac{n+1}{3} \right \rceil \geq 1$, i.e., $S_{\sigma^*} \cap S_{\pi} \neq \emptyset$. Then $t$ 
+				 must be in some servers in $S_{\sigma^*}$ at $T_2$ and since $t > t_{max}^{dec} \geq t_{\sigma^*}$. 
+				 Now since $|\Lambda| < \delta$ hence $(t, \bot)$ cannot be in any server at $T_2$  because there are not enough concurrent write operations (i.e., writes in $\Lambda$) to garbage-collect the coded-elements corresponding to tag $t$, which also holds  for tag  $t^{*}_{max}$. In that case, $t$ must be in $Tag_{dec}^{\geq k}$, a contradiction.
+%
+				\end{proof}

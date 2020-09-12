@@ -1,0 +1,200 @@
+\section{Preliminaries}
+
+\paragraph*{Erasure Coding Storage Systems}
+Erasure coding (EC) is a space-efficient solution for data storage. 
+EC has been traditionally used with great success for storage cost reduction in \textit{write-once, read-many-times} data stores (e.g., \cite{rashmi_fast15, dimakis2011survey, sathiamoorthy, HuaSimXu_etal_azure}). Recently there is an increasing interest in using EC in update-many-times, read-many-times data stores. As observed in \cite{Cocytus2016,GIZA2017}, with the advancement of hardware, it is possible to perform encoding/decoding in a real-time fashion.
+EC also has the potential to significantly reduce network bandwidth, as well as for system maintenance (such as repairing failed servers).
+Therefore, both information theory and system research communities have investigated the usage of erasure coding to reduce various kind of costs, e.g., \cite{dimakis2010network, rashmi2016ec, tamo2014family}.
+
+% Prior Work
+Two recent systems Cocytus \cite{Cocytus2016} and Giza \cite{GIZA2017} studied the applicability of erasure coding in other types of KV-stores. 
+Giza~\cite{GIZA2017}, Microsoft's proprietary storage,  is a Fast-Paxos-based  multi-version cross-data center strongly consistent object store used in Microsoft's OneDrive storage system. Giza servers store erasure-coded elements instead of the original data to significantly reduce storage cost. 
+Cocytus~\cite{Cocytus2016} is a master-based in-memory KV-store that guarantees strong consistency and reduces storage cost using erasure coding.  For each key,  value is erasure coded and the coded elements are stored among a subset of servers. In addition, the master server maintains a full copy of the value to provide high availability for read operations. 
+%Cocytus uses a master and Giza uses consensus to coordinate servers.
+As elaborated above, Cassandra's quorum-based design does not fit well with consensus protocol or master-based design.
+%Their system designs are completely different from Cassandra, a quorum-based system. 
+Therefore, we have to design a new EC-based protocol for using erasure coding in Cassandra.
+
+
+%Theory community also shows interest in using erasure coding.
+%EC-based algorithms for strongly consistent storage are also an active area of research in theory community, e.g., \cite{CadambeLMM17, SODA2016, LDS2017}.  %SODA\cite{SODA2016} described an algorithm to achieve optimal storage cost; however, pays higher write communication cost. 
+%None of these algorithms have been integrated or implemented real-world systems. It is not clear how to adapt them into practical systems.
+
+\paragraph*{Erasure Codes}
+In this paper, we consider the optimal erasure codes. In particular, we adopt an $[n, l]$  linear Maximum Distance Separable (MDS) code ~\cite{verapless_book} over a finite field $\mathbb{F}_q$ to encode and store the value $v$ among the $n$ servers. Value is referred to a specific version of the data in our context. An $[n, l]$ MDS code has the property that any $l$ out of the $n$ coded elements can be used to recover (or decode) the original value $v$. 
+For encoding, $v$ is divided\footnote{In practice, $v$ can be viewed as a byte array, which is divided into many stripes based on the choice of the code, various stripes are individually encoded and stacked against each other. We omit details of represent-ability of $v$ by a sequence of symbols of $\mathbb{F}_q$, and the mechanism of data striping, since these are fairly standard in the coding theory literature.} into $l$ elements $v_1, v_2, \ldots, v_l$ with each element having  size $\frac{1}{l}$ (assuming size of $v$ is $1$). The encoder takes the $l$ elements as input and produces $n$ coded elements $c_1, c_2, \ldots, c_n$ as output, i.e., $[c_1, \ldots, c_n] = \Phi^{(n,l)}([v_1, \ldots, v_l])$, where $\Phi^{(n, l)}$ denotes the encoder. For ease of notation, we simply write $\Phi^{(n, l)}(v)$ to mean  $[c_1, \ldots, c_n]$. The vector $[c_1, \ldots, c_n]$ is  referred to as the codeword corresponding to the value $v$. Each coded element $c_i$ also has  size $\frac{1}{l}$. In our scheme, we store \textit{one coded element} per key-value pair at each server. 
+
+\remove{
+\begin{algorithm*}[!ht]
+	\begin{algorithmic}[2]
+		{\footnotesize
+			\begin{multicols}{2}
+				\Statex /* at each reader  $r$ */
+				\Operation{read}{} 
+				%\State $wCounter\gets wCounter+1$
+				\State $\tup{t_r, v} \gets \dagetdata{c}$
+				\State $\daputdata{c}{ \tup{t_r,v}}$
+				\State return $v$
+				\EndOperation
+				\Statex
+				\Statex /* at each writer  $w$ */
+				\Operation{write}{$v$} 
+				%\State $wCounter\gets wCounter+1$
+				%\State $t \gets $ machine time
+				\State $t_w \gets (t, w)$ where $t$ is machine time at $w$
+				\State $\daputdata{c}{\tup{t_w,v}}$
+				\EndOperation
+				
+				\Statex
+				\State /* helper functions for each $\pr_i$ */
+				
+				\Procedure{get-data}{}
+				%	\State {\bf send} $(\text{{\sc query}},\rdr)$ to every server $s\in \bigcup_{cseq[i]}members(\qs_{cseq[i].conf})$
+				\State {\bf send} $(\text{{\sc query-list}})$ to each  server $s$%\in \mathcal{S}$
+				\State {\bf wait until}  receives $List_s$ from $\left\lceil \frac{n + k}{2}\right\rceil$ distinct servers%each server $s\in\srvSet_g$ s.t. $|\srvSet_g|=\left\lceil \frac{n + k}{2}\right\rceil$ 
+				\State  $Tags_{*}^{\geq k} = $ set of tags that appears in  $k$ lists	\label{line:getdata:max:begin}
+				\State  $Tags_{dec}^{\geq \ell} =$ tags appearing in $\ell$ lists with values
+				\State  $t_{max}^{*} \leftarrow \max \{Tags_{*}^{\geq k} \}$; ~~~~~$t_{max}^{dec} \leftarrow \max \{ Tags_{dec}^{\geq \ell} \}$ \label{line:getdata:max:end}
+				%\State  $t_{max}^{dec} \leftarrow \max \{ Tags_{dec}^{\geq \ell} \}$ \label{line:getdata:max:end}
+				\If{ $t_{max}^{dec} \geq  t_{max}^{*}$} 
+				\State  $v \leftarrow $ decode value for $t_{max}^{dec}$
+				\EndIf
+				%\State $List_M \triangleq \bigcup_{s \in \srvSet_g}  List_s$
+				%$\State  $\forall t$, $List_M(t) \triangleq \{ (t, v): (t,v) \in List_M \}$  
+				%\State $\forall t$, $T(t') \triangleq \{t: (t,v) \in List_M(t) \wedge t \geq t' \}$
+				%\State $t_r \gets \max \{t : (t, *) \in List_M ~\wedge |List_M(t)| \geq k~\wedge |T(t)| \leq \delta \}$
+				%\State $v_s\gets \text{decode from }  List_M(t_{r}))$
+				\State {\bf return} $\tup{t^{dec}_{max},v}$
+				\EndProcedure
+				
+				\Statex				
+				
+				\Procedure{put-data}{$\tup{\tg{},v})$}
+				\State $\Coded = [(\tg{}, e_1), \ldots, (\tg{}, e_n)]$, $e_i = \Phi_i(v)$
+				\State {\bf send} $(\text{{\sc write}}, \tup{\tg{},e_i})$ to each server $s_i$ %\in \mathcal{S}$
+				\State {\bf wait until}  receives {\sc ack} from $\left\lceil \frac{n + k}{2}\right\rceil$ distinct servers
+				\EndProcedure
+				
+			\end{multicols}
+		}
+	\end{algorithmic}	
+	\caption{The steps for writers and readers in \oreas{}.}\label{alg:oreas-client}
+\end{algorithm*}
+
+
+\begin{algorithm*}[!ht]
+	\begin{algorithmic}[2]
+		{\footnotesize
+			\begin{multicols}{2}
+				\State{/* at each server $s_i$ */} %\in \mathcal{S}$}
+				\State{\bf State variables:}%{ 										
+				\Statex $List \subseteq  \mathcal{T} \times \mathcal{C}_s$, initially   $\{(t_0, \Phi_i(v_0))\}$
+				
+				\State
+				\Receive{{\sc query-list}}{}%{$s_i,c_k$}
+				\State Send $List$ to client $q$
+				\EndReceive
+				\State
+				\Receive{{\sc put-data}, $\tup{\tg{},e_i}$}{}%{$s_i,c_k$}
+				%{\color{blue}
+				\State $\tg{max} = \max_{(t,c) \in List} \{t\}$
+				
+				\If{$\tg{} \geq \tg{max}$}   \label{line:treasmod:monotone:begin}
+				\State /* Garbage collect old values */
+				\State $List \gets List \backslash \{\tup{\tg{max},e_i}:  \tup{\tg{max},e_i} \in List\}$ 
+				\State $List \gets List \cup \{\tup{\tg{},e_i}, \tup{\tg{max},\bot}\}$
+				\Else
+				\State $List \gets List \cup \{\tup{\tg{},\bot}\}$ \label{line:treasmod:monotone:end}
+				\EndIf %}
+				
+				\State  Send {\sc ack} to client $q$
+				\EndReceive
+				
+			\end{multicols}
+		}
+	\end{algorithmic}	
+	\caption{The steps for server $s_i$ in  
+		\oreas{}.}\label{alg:oreas-server}
+\end{algorithm*}	
+}
+
+\paragraph*{Main Challenge}
+
+The key challenge in an EC-based storage protocol that is compatible with quorum-based system is to handle concurrent operations.
+To ensure high availability, the readers need to receive sufficient coded elements from the servers to be able to decode the version of the data that satisfies \textit{atomicity}. This issue becomes complicated in practice due to the following reasons: (i) there might be concurrent write operations that write different versions of the data simultaneously; (ii) servers and clients might crash so that the servers do not have enough coded element for a particular version; and (iii) messages might arrive in an arbitrary order due to the asynchrony assumption of the underlying network.
+%If a read operation is concurrent with multiple write operations, then it is possible that the read is \textit{not} able to retrieve enough coded element to recover the original data. This situation becomes trickier with failures and asynchrony.
+
+%There are two major ways of replicating data in KV-stores -- \emph{leader-based} or \emph{leaderless} strategy. Leader-based systems are often referred to as the primary-backup replication, with an appropriate consensus protocol like Paxos~\cite{PaxosSimple} or Raft~\cite{Raft} to elect a leader. Leaderless replication is mainly implemented based on quorum systems, and are used widely in NoSQL KV-stores.  The applicability of erasure coding in leader-based KV-stores has been recently explored in works like Cocytus \cite{Cocytus2016} and Giza \cite{GIZA2017}.  Our work is focused on using \textit{leaderless} strategy to provide strong consistency; hence, the technique is sufficiently different from prior leader-based storage systems. Moreover, we implement our algorithms in Cassandra, and show that CassandrEAS can handle typical NoSQL workload (using YCSB \cite{YCSB}) with low performance penalty.%, which was different from the in-memory \cite{Cocytus2016} and cross-datacenter systems \cite{GIZA2017}. 
+
+%Cocytus~\cite{Cocytus2016} is a leader-based in-memory KV store that guarantees strong consistency. For each key, the ue is erasure coded and the coded elements are stored among a subset of servers. In addition, a primary server maintains a full copy of the value so as to provide high availability for read operations.  Giza~\cite{GIZA2017} is a leader-bsed cross-datacenter KV store that also guarantees strong consistency, and used in Microsoft's OneDrive storage system. Giza uses FAST-PAXOS (a variation of Paxos~\cite{PaxosSimple}) to elect the leader.
+%The practicality of erasure-codes in Giza comes form the fact that an key-value pair is updated on average at most $4$ times during its life time.  
+
+% Challenges
+%\paragraph*{Challenges}
+%\vspace*{3pt} \noindent \textbf{Challenges}~~
+%On a high-level, erasure codes are more natural in leaderless systems than in leader-based systems. 
+
+%%%%%%%%%%%%%%
+%%%%%%% Maybe move Challenges to later??? %%%%%%%
+%%%%%%%%%%%%%%
+
+%\subsection{Challenges}
+%Cassandra and other similar NoSQL KV-Stores  (e.g., \cite{Dynamo07,Riak}) use quorums to ensure strong consistency.  Specifically, they require the client (or a client proxy) to contact a group of servers. In replication-based protocols, the writer clients need to send \textit{identical} copies of data to all the servers in the quorum, which consumes unnecessary network bandwidth and storage space. The case of Cassandra is illustrated in Figure \ref{fig:1}. On the contrary, in EC-based protocols, clients only send or receive \textit{coded elements} from servers. This substantially reduces not only the storage overhead but also the communication overhead.
+
+%The main challenge of using EC in quorum systems is efficient handling of read operations. %concurrent with write operations. To ensure high availability, the reader clients need to receive sufficient coded elements from the servers to be able to decode the original data (and complete the read operation). This issue becomes complicated in practice due to the following reasons: (i) there might be concurrent write operations, (ii) servers and clients might crash, and (iii) messages might arrive in an arbitrary order due to the asynchrony assumption of the underlying network.
+
+\commentOut{++++++++++
+\subsection{Main Contributions}
+
+\paragraph*{Contributions: Protocol Design}
+We propose a new EC-based distributed storage algorithm -- One-Round Erasure coding Atomic Storage (\oreas{}). Our algorithm tolerates network asynchrony and crash failures of any client and some fraction of servers, and achieve \textit{near-optimal storage cost}.
+%Similar to the design of vanilla Cassandra, if clocks drift significantly, then \oreas{} might violate strong consistency. On the contrary, \treasmod{} ensures strong consistency at all time, but suffers an extra round of delay due to the usage of logical timestamp.
+%We propose a new EC-based storage scheme. If we use logical timestamps for each operation, then it requires two rounds to complete an operation, namely \treasmod. In this case, strong consistency is guaranteed at all time. On the other hand, if we use physical timestamps (i.e., machine time), then it only requires one round to complete an operation, namely \oreas. Similar to the replication-based protocol in Cassandra, \oreas{} might violate strong consistency if clocks at servers drift significantly.
+\oreas{} has two benefits listed below. Let $\delta$ represent the maximum number of writes concurrent with any read.
+\begin{itemize}
+	\item The storage cost at each server is $\frac{B}{ \lceil\frac{\delta+1}{k}\rceil}$ bits for storing $B$-bit data. The new storage scheme is at least as efficient as the common EC-based protocols where each server stores codeword symbols for $\delta$ versions, e.g., \cite{ARES:ICDCS:2019}. Furthermore, for certain parameters of $\delta,k$, the new scheme can be up to twice as storage-efficient. For example, if we use an $[n = 5, k = 3]$ MDS code, the storage cost is simply  $1.67$ per unit of data, instead of $5$ as in the case of vanilla Cassandra.
+	
+	%\item An $[n, k]$ erasure code splits the value $v$ of size $1$ unit into $k$ elements, each of size $\frac{1}{k}$ units, creates $n$ {\em coded elements}, and stores one coded element per server. The size of each coded element is also $\frac{1}{k}$ units, and thus the total storage cost across the $n$ servers is $\frac{n}{k}$ units. For example, if we use an $[n = 5, k = 3]$ MDS code, the storage cost is simply  $1.67$ per unit of data, instead of $5$ as in the case of replication-based algorithms, such as ABD.
+	
+	
+%	$B/\lceil \frac{l}{\delta}\rceil$ bits. Since $\frac{\delta}{l} \geq 1/\lceil \frac{l}{\delta}\rceil,$ the new storage scheme is at least as efficient as the common EC-based protocols where each server stores codeword symbols for $\delta$ versions, e.g., \cite{ARES:ICDCS:2019}. Furthermore, for certain parameters of $\delta,l$, the new scheme can be up to twice as storage-efficient. %as previous EC-based protocols. 
+	
+	\item In the new scheme, as in most replication-based approaches (such as the well-known replication-based algorithm by Attiya, Bar-Noy, and Dolev~\cite{ABD96} and Dynamo-style quorum systems \cite{Cassandra2010,Dynamo07,pbs-vldb2012}),  each server stores \underline{exactly one version of the data.} This is contrast to previous EC-based protocols (e.g., \cite{CadambeLMM14}) where $\delta$ versions of the data are stored at the server. 
+\end{itemize}
+
+%(which we refer to as ABD)
+
+\paragraph*{Contributions: System}
+
+We implement \treasmod{} and \oreas{} into Cassandra \cite{Cassandra2010}, namely CassandrEAS.
+We pick Cassandra to be our base system due to its popularity and wide applications.
+Cassandra adopts a practical partial quorum approach (or Dynamo-style quorum) \cite{pbs-vldb2012} for replicating data.
+We replace its replication mechanism by our new EC-based protocols.
+We try to make minimum modification to the original Cassandra codebase, and Cassandra users can call Cassandra's original read and write API directly \textit{without} knowing the details of the algorithm.\footnote{Our algorithm does not support transaction; hence, those transaction-related APIs are not supported.} 
+To the best of our knowledge, this is the first implementation in NoSQL KV-Store that uses erasure coding.\footnote{We will release our code on Github once the paper is accepted in hope that stimulate more discussion and evaluation on using erasure codes in similar systems.} 
+
+For evaluation, we deploy CassandrEAS in Google Cloud Platform (GCP) and conduct extensive experiments using the Yahoo! Cloud Service Benchamarking (YCSB) workload generator \cite{YCSB:2010}. YCSB is a realistic tool used to benchmark many KV-stores.
+The implementation is discussed in Section \ref{s:implementation} and we present evaluation results in Section \ref{s:evaluation}.
+
+++++++++++++=}
+
+
+
+
+
+% prior work. We can talk about key-value systems that are completely different and does not use quorums (so we don't have to worry about comparing) or large systems like Giza, a proprietary system. What do you think we take a motivation as below.
+
+% our contribution
+
+
+
+% Kishori's guideline
+%a)  is it possible to even use EC code based key-value in Cassandra, which is a super popular key-value, store to reduce storage cost? 
+%b) But wait a minute, Cassandra wants strong consistency, which is not so easy with failure, asynchrony and EC,  however, it uses replication and quorum for now but might be possible to use EC with quorums
+%c) Thankfully, we created a simple algorithm with might be possible to put into Cassandra.
+%d) With lots of pain we managed to implement it in Cassandra, and got some interesting results.
+%e) Let me describe the results to you now
+
+
+
+
