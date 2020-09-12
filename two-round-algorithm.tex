@@ -1,4 +1,5 @@
 \section{\treasmod: Storage-optimized two-round algorithm}\label{sec:treasmod}
+\lewis{Do we need to say TREAS-OPT? Since TREAS is referred to your previous algorithm? Some links are missing here.}
 In this section,  we present  \treasmod{}. The pseudo-code for  ~\treasmod{} is presented in  Alg.~\ref{fig:treasmod}. 
 % However, liveness is  guaranteed under the assumption that the number of write operations concurrent with a read  operation is at most $\delta$. The precise definition of concurrency depends on the algorithm itself, and appears later in this section. The \treasmod{}~algorithm has significantly reduced storage and communication cost, compared to replication, when $\delta$ is limited.
 %Expressing an atomic algorithm in terms of the DAP primitives serves multiple purposes.
@@ -41,6 +42,35 @@ Notice that tags could be defined in any totally ordered domain and given that t
 there can be a direct mapping to the domain we assume. 
 % and we denote by  $\mathcal{T}$  the set of all possible tags. 
 For any  $\tg{1}, \tg{2} \in \mathcal{T}$ we define  $\tg{2} > \tg{1}$ if $(i)$ $\tg{2}.z > \tg{1}.z$ or $(ii)$ $\tg{2}.z = \tg{1}.z$ and $\tg{2}.w > \tg{1}.w$.
+
+ Each server $s_i$ stores one  state variable,  $List$,  which is a set of up to $(\delta + 1)$  (tag, coded-element) pairs. Initially the set at $s_i$ contains a single element, $List = \{ (t_0,  \Phi_i(v_0)\}$.   Below we describe the implementation of the DAPs.
+%
+%				At a high-level, the algorithm (see Fig.~\ref{fig:casopt}) is a natural generalization of the $ABD$ algorithm accounting for the fact that we use MDS codes.
+
+$\dagettag{c}$: A  client,  during the execution of a  $\dagettag{c}$ primitive, queries all the servers in $\servers{c}$ for the highest tags in their  $Lists$, and awaits responses from $\left\lceil \frac{n+k}{2} \right\rceil$ servers.
+% with $k \geq \frac{2n}{3}$. 
+A server upon receiving the {\sc get-tag} request, 
+responds to the client with the highest tag, as $\tg{max} \equiv \max_{(t,c) \in List}t$. 
+Once the client receives the tags from $\left\lceil \frac{n+k}{2} \right\rceil$ servers,  it selects  the highest  tag $t$ and returns it . 
+
+$c.\act{put-data}(\tup{t_w, v})$: During the  execution of the primitive  $c.\act{put-data}(\tup{t_w, v})$,  a client 
+% computes the coded elements for each of the $n$ servers, and 
+sends the  pair  $(t_w, \Phi_i(v))$ to each server $s_i\in\servers{c}$.  
+When a server $s_i$ receives a message $(\text{\sc put-data}, t_w, c_i)$ , it adds the pair in its local $List$, 
+trims the pairs with the smallest tags exceeding the length $(\delta+1)$ of the $List$ , and replies 
+with an ack to the client.
+%
+%Every time a $(\text{\sc put-data}, t_w, c_i)$  message arrives at a server $s_i$, 
+%from a writer, 
+%the pair gets added to the $List$. As the size of the $List$ at each $s_i$ is bounded by $(\delta+1)$, then following an insertion in the $List$, $s_i$ trims the coded-elements associated with the smallest tags. 
+In particular, $s_i$ replaces the coded-elements of the older tags with $\bot$, and maintains only the coded-elements associated with the 
+$(\delta+1)$ highest tags in the $List$ (see Line Alg.~\ref{fig:casopt:server}:\ref{line:server:removemin}).
+%which is then garbage collected to keep tag and coded-element pairs of the highest  $(\delta+1)$ tags, and by replacing the coded-elements of the older tags with $\bot$,  a symbol that signifies garbage-collected coded-elements. 
+The client completes the primitive operation after getting acks from $\left\lceil \frac{n+k}{2} \right\rceil$ servers.
+
+$\dagetdata{c}$:	A  client, during the execution of a  $\dagetdata{c}$ primitive, queries all the servers in $\servers{c}$ for their  local variable $List$, and awaits responses from $\left\lceil \frac{n+k}{2} \right\rceil$ servers. Once the client receives $Lists$ from $\left\lceil \frac{n+k}{2} \right\rceil$ servers,  it selects the highest  tag $t$, such that: $(i)$ its corresponding value $v$ is decodable from the coded elements in the lists; and $(ii)$ $t$ is the highest tag seen from the responses of at least $k$ $Lists$ 
+(see lines Alg.~\ref{fig:casopt}:\ref{line:getdata:max:begin}-\ref{line:getdata:max:end}) and returns the pair $(t, v)$. 
+Note that in the case where anyone of the above conditions is not satisfied the corresponding read operation does not complete.
 
 
 \treasmod{}  shares some similarities with ABD as well as TREAS. Specifically, in \treasmod{}, like TREAS, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$ is garbage collected, the server stores a tuple of the form $(t, \bot)$. However, unlike TREAS, in \treasmod{} each server stores only coded element, similar to ABD. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however the server will continue to store a tuple of the form $(\tau_{max},\bot)$.

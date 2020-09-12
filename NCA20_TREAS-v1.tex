@@ -172,6 +172,8 @@
 	\begin{abstract}		
 		% Old comments: needt o shorten this to 150 -- 200 words
 		% See Cocytus for a nice writing: https://www.usenix.org/node/194429
+		\lewis{Use the IEEE format first? I think the page length will change a lot using the template? I think we can add authors name too. We can use alphabetical ordering.}
+		
 		Cassandra is a popular NoSQL database, often used as a distributed key-value store (KV-store) in industry. To increase availability and fault-tolerance, Cassandra replicates data on multiple servers, which unfortunately wastes storage space in the case of high replication. Recently, there has been a series of efforts on integrating erasure coding (EC) with various types of KV-store to reduce storage cost. To our knowledge, there is \textit{no} EC-based protocol for Cassandra or similar quorum-based KV-stores owing to the difficulties in integrating erasure coding with quorum-based design. 
 		
 		In this work, we propose a EC-based protocol that achieves strong consistency with \textit{near-optimal storage cost}. 
@@ -203,10 +205,12 @@
 \begin{IEEEkeywords}
  Strong consistency, fault-tolerence, distributed storage
 \end{IEEEkeywords}
-	
 	\input{intro}
+
 	\input{preliminaries}
-    \input{models-and-definitions-v1}
+
+        \input{models-and-definitions-v1}
+
 	\input{two-round-algorithm}
      
 	\input{one-round-algorithm}

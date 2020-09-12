@@ -113,7 +113,7 @@ the maximum number of writes concurrent with any read operation, and $k = n-2f$.
 
 
 
-\section{CassandrEAS}
+\section{Our System: CassandrEAS}
 \label{s:CassandrEAS}
 
 \subsection{Implementation}
@@ -268,6 +268,8 @@ We have tested our system with 7 servers and 1 crashed server, and observed mini
 
 
 \section{Discussion Topics}
+
+\lewis{I think we should remove a bulk of this section. Maybe just keep the future work part.}
 
 \begin{itemize}
     \item \textit{Future work}: The current implementation of CassandrEAS only supports KV-pairs, whereas Cassandra supports column family data model. We would like to discuss potential trade-offs and solutions to support various data model. Another interesting direction is the mechanism to support efficient geo-replication. Since each server stores a smaller amount of data, with proper design, the EC-based solution might be more efficient than the replication-based protocol (under certain workloads).
