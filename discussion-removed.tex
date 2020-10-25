@@ -1,0 +1,16 @@
+\section{Discussion Topics}
+
+
+\begin{itemize}
+    \item \textit{Future work}: The current implementation of CassandrEAS only supports KV-pairs, whereas Cassandra supports column family data model. We would like to discuss potential trade-offs and solutions to support various data model. Another interesting direction is the mechanism to support efficient geo-replication. Since each server stores a smaller amount of data, with proper design, the EC-based solution might be more efficient than the replication-based protocol (under certain workloads).
+
+    \item \textit{Importance/Applicability}: Some researchers warned us that it is \textit{not} reasonable to sacrifice performance for storage space. However, in our views, there are certainly needs for reducing storage, as the amount of data is growing exponentially. Moreover, if we want to apply distributed storage systems on top of smaller machines (e.g., edge servers or even Internet-of-Things), then storage-efficient solutions are certainly appealing. We would love to learn new ideas on use cases and interesting trade-offs to explore.
+    
+    \item \textit{Feasibility/Evaluation}: We only performed evaluation through YCSB. However, the use cases for EC-based storage systems might be very different from the normal cloud storage. It will be interesting to learn what workload is suitable for evaluating this type of systems.
+    
+    \item \textit{Open theoretical problems}: Right now, CassandrEAS only supports read/write operations, but not transactions, whereas Cocytus \cite{Cocytus2016} and Giza \cite{GIZA2017} supports transactions. Lightweight EC-based transaction mechanism is one interesting open problem. Another category of open problems is self-stabilization, reconfiguration, and recovery protocols discussed earlier.
+    
+    \item \textit{Open engineering problems}: In our implementation of CassandrEAS, we did not introduce any optimization. The reason is that as the first step, we want to make a minimal modification to Cassandra's core functions to demonstrate feasibility. For further optimization, there are two possibilities: modifying the database engine and cache protocol so that it is more friendly to coded elements, and introducing more efficient data structure to store coded elements.
+    
+    \item \textit{Limitations/Opportunity}: \oreas{} provides a knob to user to tune the performance and desired guarantees. Real-world systems also provide many different knobs. Unfortunately, knobs are usually difficult to tune in practice, because the trade-off is not always clear. Is it reasonable to expose the knob to users? What is the best way to help users (for selecting the most appropriate knob)? 
+\end{itemize}

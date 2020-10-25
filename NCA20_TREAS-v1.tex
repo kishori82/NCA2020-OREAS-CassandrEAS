@@ -31,12 +31,11 @@
 \usepackage{ioa_code}
 \usepackage{scalerel,stackengine}
 
-
 \newcommand{\myemph}[1]{{\it #1}}
-%\newcommand{\nn}[1]{{\blue{#1}}}
+
 \newcommand{\nn}[1]{{{#1}}}
-%\newcommand{\nnrev}[2]{\sout{}{\blue{#2}}}
-\newcommand{\nnrev}[2]{\sout{}{{#2}}}
+\newcommand{\delete}[1]{ \red{\sout{#1}} }
+
 %\newcommand{\kmk}[1]{{\red{#1}}}
 \newcommand{\kmk}[1]{{{#1}}}
 
@@ -111,7 +110,7 @@
 \newcommand{\daputdata}[2]{{\act{put-data}(#2)}}
 \newcommand{\dagetdata}[1]{{\act{get-data}()}}
 \newcommand{\dagettag}[1]{{\act{get-tag}()}}
-\newcommand{\treas}{{\sc Treas}}
+\newcommand{\treas}{{\sc Areas}}
 \newcommand{\oreas}{{\sc Oreas}}
 \newcommand{\oreasSpace}{\oreas\hspace{2pt}}
 
@@ -144,6 +143,7 @@
 \input{nn_macros}
 
 \newcommand{\lewis}[1]{{\color{red} #1}}
+\newcommand{\kishori}[1]{{\color{blue}{\bf Added by Kishori}: #1}}
 
 
 %%%%%% Format %%%%%%
@@ -165,20 +165,31 @@
 	% or CassandrEAS: Strongly Consistent Erasure Coding KV-Store
 	%\maketitle
 	
-	\dictchar{CassandrEAS: Highly Available and Storage-Efficient Distributed KV-Store with Erasure Coding}
+	\title{CassandrEAS: Highly Available and Storage-Efficient Distributed Key-Value Store with Erasure Coding\thanks{*Authors ordered alphabetically.}}
 	
+\author{\IEEEauthorblockN{Kishori M. Konwar*, Muriel Medard}
+\IEEEauthorblockA{\textit{Dept of EECS, MIT} \\
+Cambridge, USA \\
+\{kishori, medard\}@mit.edu}
+\and
+\IEEEauthorblockN{Haochen Pan, Lewis Tseng, Yingjian Wu}
+\IEEEauthorblockA{\textit{Department of Computer Science, Boston College} \\
+%\textit{Boston College}\\
+Boston,USA \\
+\{haochen.pan, lewis.tseng, wuit\}@bc.edu}
+}
+\maketitle
 	%{\Large CassandrEAS: Making Cassandra Strongly Consistent and Efficient using Erasure Coding}
 	%-------------------------------------------------------------------------------
 	\begin{abstract}		
 		% Old comments: needt o shorten this to 150 -- 200 words
 		% See Cocytus for a nice writing: https://www.usenix.org/node/194429
-		\lewis{Use the IEEE format first? I think the page length will change a lot using the template? I think we can add authors name too. We can use alphabetical ordering.}
 		
-		Cassandra is a popular NoSQL database, often used as a distributed key-value store (KV-store) in industry. To increase availability and fault-tolerance, Cassandra replicates data on multiple servers, which unfortunately wastes storage space in the case of high replication. Recently, there has been a series of efforts on integrating erasure coding (EC) with various types of KV-store to reduce storage cost. To our knowledge, there is \textit{no} EC-based protocol for Cassandra or similar quorum-based KV-stores owing to the difficulties in integrating erasure coding with quorum-based design. 
-		
-		In this work, we propose a EC-based protocol that achieves strong consistency with \textit{near-optimal storage cost}. 
+		%\delete{Cassandra is a popular NoSQL database, often used as a distributed key-value store (KV-store) in industry. To increase availability and fault-tolerance, Cassandra replicates data on multiple servers, which unfortunately wastes storage space in the case of high replication. Recently, there has been a series of efforts on integrating erasure coding (EC) with various types of KV-store to reduce storage cost. To our knowledge, there is \textit{no} EC-based protocol for Cassandra or similar quorum-based KV-stores owing to the difficulties in integrating erasure coding with quorum-based design.}
+%
+		In this work, we propose a erasure coding-based protocol that implements a key-value store with atomicity and \textit{near-optimal storage cost}. 
 		Our protocol supports concurrent read and write operations while tolerating asynchronous communication and crash failures of any client and some fraction of servers. 
-		One novel feature of our protocol is a \textit{tunable knob} between the number of supported concurrent operations, availability, and storage cost.
+		One novel feature of our protocol is a \textit{tunable knob} between the number of supported concurrent operations, availability, and storage cost. 
 		
 		We implement our protocol into  Cassandra, namely CassandrEAS (Cassandra + Erasure-coding Atomic Storage). Evaluation using YCSB on Google Cloud Platform with different configurations shows that  CassandrEAS incurs moderate penalty on latency and throughput, yet saves significant amount of storage space. 
 		
@@ -209,7 +220,7 @@
 
 	\input{preliminaries}
 
-        \input{models-and-definitions-v1}
+    \input{models-and-definitions-v1}
 
 	\input{two-round-algorithm}
      
