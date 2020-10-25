@@ -1,15 +1,16 @@
-\section{Model and Definitions}\label{model}
-A shared atomic storage can be emulated
+\subsection{Model and Definitions}\label{model}
+
+A shared atomic storage (or atomic KV-store) can be emulated
 by composing individual atomic objects. Therefore, we aim
 to implement \nn{a single} atomic read/write memory object. %on a set of servers.
-\nnrev{Each data}{A read/write} object takes a value from a set $\valSet$. 
+A read/write object takes a value from a set $\valSet$. 
 We assume a system consisting of three distinct sets of processes: 
 a set $\wSet$ of writers, a set $\rdSet$ of readers and  $\srvSet$, a set of servers. 
  Servers host data elements (replicas or encoded data fragments).
 Each writer is allowed to modify the value of a shared object, and each reader is allowed to obtain 
 the value of that object. 
 Processes communicate via \myemph{messages} through 
-\myemph{asynchronous}, \myemph{reliable} channels. 
+\myemph{asynchronous}, but \myemph{reliable} channels. 
 %%Let $\idSet = \cSet\cup\reconSet\cup\srvSet$. 
 %In a read/write object implementation, we assume that the object may take a value from a set $\valSet$. 
 %Each writer is allowed to modify the value of the object, and each reader is allowed to obtain 
@@ -89,9 +90,9 @@ gets transmitted in the messages sent as part of the operation. We assume that m
 such as version number, process ID, etc. used by various operations is of negligible size, and therefore,  ignore in the calculation of storage and communication cost. Further, we normalize
 both the costs with respect to the size of the value v; in other words, we compute the costs
 under the assumption that v has size 1 unit.
+%\lewis{This is repetitive? Didn't we already discuss this before? Second paragraph of this section.}
+%\blue{Yes, now removed}
 
- \myparagraph{{\bf Erasure Codes}.} In \treasmod{}, we use an $[n, k]$  linear MDS code ~\cite{verapless_book} over a finite field $\mathbb{F}_q$ to encode and store the value $v$ among the $n$ servers. An $[n, k]$ MDS code has the property that any $k$ out of the $n$ coded elements can be used to recover (decode) the value $v$. 
- For encoding, $v$ is divided\footnote{In practice $v$ is a file, which is divided into many stripes based on the choice of the code, various stripes are individually encoded and stacked against each other. We omit details of represent-ability of $v$ by a sequence of symbols of $\mathbb{F}_q$, and the mechanism of data striping, since these are fairly standard in the coding theory literature.} into $k$ elements $v_1, v_2, \ldots v_k$ with each element having  size $\frac{1}{k}$ (assuming size of $v$ is $1$). The encoder takes the $k$ elements as input and produces $n$ coded elements $c_1, c_2, \ldots, c_n$ as output, i.e., $[c_1, \ldots, c_n] = \Phi^{(n,k)}([v_1, \ldots, v_k])$, where $\Phi^{(n, k)}$ denotes the encoder. For ease of notation, we simply write $\Phi^{(n, k)}(v)$ to mean  $[c_1, \ldots, c_n]$. The vector $[c_1, \ldots, c_n]$ is  referred to as the codeword corresponding to the value $v$. Each coded element $c_i$ also has  size $\frac{1}{k}$. In our scheme we store one coded element per server. We use $\Phi^{(n, k)}_i$ to denote the projection of $\Phi^{(n, k)}$ on to the $i^{\text{th}}$ output component, i.e., $c_i = \Phi^{(n, k)}_i(v)$. Without loss of generality, we associate the coded element $c_i$ with server $i$, $1 \leq i \leq n$.  Below, when the dimension of the MDS code is clear we omit the code parameter $\Phi^{(n, k)}(\cdot)$ to write simply as $\Phi(\cdot)$. 
  
 \myparagraph{Quorum system}. We define our quorum system, $\mathcal{Q}$, to be
 the set of all subsets of $\mathcal{S}$  that have at least $\frac{n+k}{2}$ servers. 
@@ -142,7 +143,7 @@ non-failed servers.
 %all operations are fast.
 
 \myparagraph{Liveness of operations.} We require algorithms to satisfy certain liveness properties, specifically, in every fair execution that satisfies certain restrictions in terms of the number of failed nodes, we require every operation by a non-faulty client 
-completes, irrespective of the behavior of other clients.  
+completes eventually, irrespective of the behavior of other clients.  
 Although most replication-based based atomic memory algorithm guarantee liveness as long as certain no of servers remain 
 non-faulty.  Unfortunately, certain lower bounds on the storage-cost of erasure-coded atomic memory algorithm in the presence of faulty clients ~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume certain restricting 
-assumption.  CASGC, ORCAS-A and ORCAS-B assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 
+assumption.  CASGC, ORCAS-A and ORCAS-B~\cite{DGL08} assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 
