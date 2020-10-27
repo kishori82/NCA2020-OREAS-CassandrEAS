@@ -56,7 +56,7 @@ Processes communicate via \myemph{messages} through
 %Each such action
 %causes the state at $p$ to change. 
 An \textit{execution} of an algorithm $A$  is an alternating sequence of states
-and actions of $A$ starting with the initial state and ending in a state. 
+and actions of $A$ starting with the initial state. 
 An execution $\EX$ is \textit{well-formed} if any process invokes one operation
 at a time and it is \textit{fair} if enabled actions perform a step infinitely often. In the rest of the paper 
 we consider executions that are fair and well-formed. A process
@@ -140,6 +140,6 @@ non-failed servers.
 
 \myparagraph{Liveness of operations.} We require algorithms to satisfy certain liveness properties, specifically, in every fair execution that satisfies certain restrictions in terms of the number of failed nodes, we require every operation by a non-faulty client 
 completes eventually, irrespective of the behavior of other clients.  
-Although most replication-based based atomic memory algorithm guarantee liveness as long as certain no of servers remain 
-non-faulty.  Unfortunately, certain lower bounds on the storage-cost of erasure-coded atomic memory algorithm in the presence of faulty clients ~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume certain restricting 
-assumption.  CASGC, ORCAS-A and ORCAS-B~\cite{DGL08} assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 
+Most replication-based atomic memory algorithms guarantee liveness, as long as certain number of servers remain 
+non-faulty, however, similar fault-tolerance levels can be achieved erasure-code based systems only in 
+carefully designed algorithms. Moreover, there are some lower bound results on the  storage-cost for erasure-coded atoomic memory algorithms in the presence of faulty clients~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume some restricting assumptions.  CASGC, ORCAS-A and ORCAS-B~\cite{DGL08} assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 

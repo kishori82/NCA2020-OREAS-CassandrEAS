@@ -1,7 +1,7 @@
 
 \section{One-Round Erasure coding Atomic Storage}
 
-\begin{algorithm*}[!ht]
+\begin{algorithm}[!ht]
 				\begin{algorithmic}[2]
 					{\footnotesize
 					\begin{multicols}{2}
@@ -27,7 +27,7 @@
 				\end{algorithmic}	
 				\caption{The reader/writer steps for implementing \oreas.}\label{fig:oreas:write}
 				\vspace{-1em}
-	\end{algorithm*}
+	\end{algorithm}
 
 Instead of logical timestamp (tags), \oreas{} relies on physical timestamps, i.e., machine time at the coordinator. The advantage of using logical timestamp is that strong consistency is guaranteed even in the presence of clock drift and absence of synchronized clocks among the various servers. The downside is that it requires, as in \treasmod{}, an additional communication round in order to gather the largest tag, which increases latency. On the other hand, in \oreas{}, the strong consistency guarantee is reliant on correctly synchronized clocks; however, write operations complete in one round.		
 

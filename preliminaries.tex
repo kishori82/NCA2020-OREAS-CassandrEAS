@@ -2,7 +2,7 @@
 
 \subsection{Erasure Coding Storage Systems}
 Erasure coding (EC) is a space-efficient solution for data storage. 
-EC has been traditionally used with great success for storage cost reduction in \textit{write-once, read-many-times} data stores (e.g., \cite{rashmi_fast15, dimakis2011survey, sathiamoorthy, HuaSimXu_etal_azure}). Recently there is an increasing interest in using EC in update-many-times, read-many-times data stores. As observed in \cite{Cocytus2016,GIZA2017}, with the advancement of hardware, it is possible to perform encoding/decoding in a real-time fashion.
+EC has been traditionally used with great success for storage cost reduction in \textit{write-once, read-many-times} data stores (e.g., \cite{rashmi_fast15, dimakis2011survey, sathiamoorthy, HuaSimXu_etal_azure, DepSky}). Recently there is an increasing interest in using EC in update-many-times, read-many-times data stores. As observed in \cite{Cocytus2016,GIZA2017}, with the advancement of hardware, it is possible to perform encoding/decoding in a real-time fashion.
 EC also has the potential to significantly reduce network bandwidth, as well as for system maintenance (such as repairing failed servers).
 Therefore, both information theory and system research communities have investigated the usage of erasure coding to reduce various kind of costs, e.g., \cite{dimakis2010network, rashmi2016ec, tamo2014family}.
 
@@ -15,9 +15,9 @@ As elaborated above, Cassandra's quorum-based design does not fit well with cons
 %Their system designs are completely different from Cassandra, a quorum-based system. 
 Therefore, we have to design a new EC-based protocol for using erasure coding in Cassandra.
 
-
 The distributed computing community also shows interest in using erasure coding.
-EC-based algorithms for strongly consistent storage are an active area of research in theory community, e.g., \cite{CadambeLMM17, SODA2016, LDS2017, NicolaouC0KML19}.  SODA\cite{SODA2016} described an algorithm to achieve optimal storage cost; however, pays higher write communication cost. 
+EC-based algorithms for strongly consistent storage are an active area of research in theory community, e.g., \cite{CadambeLMM17, SODA2016, LDS2017, NicolaouC0KML19}.  SODA\cite{SODA2016} described an algorithm to achieve optimal storage cost; however, it pays a 
+higher write communication cost. 
 None of these algorithms have been integrated or implemented real-world systems. It is not clear how to adapt them into practical systems.
 
 
@@ -26,7 +26,7 @@ None of these algorithms have been integrated or implemented real-world systems.
 %None of these algorithms have been integrated or implemented real-world systems. It is not clear how to adapt them into practical systems.
 
 \subsection{Erasure Codes}
-In this paper, we consider the optimal erasure codes. In particular, we adopt an $[n, l]$  linear Maximum Distance Separable (MDS) code ~\cite{verapless_book} over a finite field $\mathbb{F}_q$ to encode and store the value $v$ among the $n$ servers. Value is referred to a specific version of the data in our context. An $[n, l]$ MDS code has the property that any $l$ out of the $n$ coded elements can be used to recover (or decode) the original value $v$. 
+In this paper, we consider the optimal erasure codes. In particular, we adopt an $[n, l]$  linear Maximum Distance Separable (MDS) code ~\cite{verapless_book} over a finite field $\mathbb{F}_q$ to encode and store the value $v$ among the $n$ servers. The value refers to a specific version of the data in our context. An $[n, l]$ MDS code has the property that any $l$ out of the $n$ coded elements can be used to recover (or decode) the original value $v$. 
 For encoding, $v$ is divided\footnote{In practice, $v$ can be viewed as a byte array, which is divided into many stripes based on the choice of the code, various stripes are individually encoded and stacked against each other. We omit details of represent-ability of $v$ by a sequence of symbols of $\mathbb{F}_q$, and the mechanism of data striping, since these are fairly standard in the coding theory literature.} into $l$ elements $v_1, v_2, \ldots, v_l$ with each element having  size $\frac{1}{l}$ (assuming size of $v$ is $1$). The encoder takes the $l$ elements as input and produces $n$ coded elements $c_1, c_2, \ldots, c_n$ as output, i.e., $[c_1, \ldots, c_n] = \Phi^{(n,l)}([v_1, \ldots, v_l])$, where $\Phi^{(n, l)}$ denotes the encoder. For ease of notation, we simply write $\Phi^{(n, l)}(v)$ to mean  $[c_1, \ldots, c_n]$. The vector $[c_1, \ldots, c_n]$ is  referred to as the codeword corresponding to the value $v$. Each coded element $c_i$ also has  size $\frac{1}{l}$. In our scheme, we store \textit{one coded element} per key-value pair at each server. 
 
 \remove{

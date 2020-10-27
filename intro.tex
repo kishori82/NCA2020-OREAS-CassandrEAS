@@ -11,7 +11,7 @@ The data items are replicated at multiple servers to provide high fault-toleranc
 One drawback of the replication-based approach is the high storage cost. Erasure coding (EC) has been integrated with other types of KV-store to reduce storage cost (e.g., Cocytus \cite{Cocytus2016} for in-memory KV-store  and Giza \cite{GIZA2017} for cross-datacenter KV-store).
 This work is motivated by the following question: \textit{is it possible to use erasure coding in a NoSQL KV-store to reduce storage cost while maintaining strong consistency with moderate performance penalty?} We provide an affirmative answer by introducing \textbf{CassandrEAS (Cassandra + Erasure-coding Atomic Storage)}, a customized version of Cassandra \cite{Cassandra} with a new EC-based storage protocol that achieves \textit{atomicity} \cite{lamport}, a form of strong consistency. 
 
-In this paper, we first present a novel quorum and erasure-code-based and storage cost optimized protocol called Two-Round Erasure coded Atomic Storage-Optimized (\treasmod{}). In addition to the improved storage cost, when compared to the existing erasure-code based algorithms, \treasmod{} algorithm is simple to implement as the high-level structure of the algorithm is very similar to the classic replication-based algorithm by Attiya, Bar-Noy and Dolev ~\cite{ABD96} and practical quorum storage ~\cite{Dynamo,pbs-vldb2012} for implementing strong consistency in distributed storage. \treasmod{} is a two-round protocol uses logical timestamps, which obviates the reliance on  any physical clock to implement atomic KV-store. We also modify \treasmod{} to use physical timestamp that results in a single-round distributed storage protocol One-Round Erasure coding Atomic Storage (\oreas). Both algorithms are suitable for quorum-based KV-store.%, and we replace  Cassandra's replication  mechanism  by  our EC-based  protocols.
+In this paper, we first present a novel quorum and erasure-code-based and storage cost optimized protocol called Two-Round Erasure coded Atomic Storage-Optimized (\treasmod{}). In addition to the improved storage cost, when compared to the existing erasure-code based algorithms, \treasmod{} algorithm is simple to implement as the high-level structure of the algorithm is very similar to the classic replication-based algorithm by Attiya, Bar-Noy and Dolev ~\cite{ABD96} and practical quorum storage ~\cite{Dynamo,pbs-vldb2012} for implementing strong consistency in distributed storage. \treasmod{} is a two-round protocol that uses logical timestamps, which obviates the reliance on  any physical clock to implement atomic KV-store. We also modify \treasmod{} to use physical timestamp that results in a single-round distributed storage protocol One-Round Erasure coding Atomic Storage (\oreas). Both algorithms are suitable for quorum-based KV-store.%, and we replace  Cassandra's replication  mechanism  by  our EC-based  protocols.
 
 
 
@@ -54,26 +54,24 @@ To make our formula compact, let $k = n-2f$. For Cassandra, we choose the majori
 
 \begin{table}[h]
 	\centering
-	\begin{tabular}{ l|c|c}
-		& Cassandra &  CassandrEAS  \\ \hline
-		&&\\[-0.8em]
-		Storage cost at each server & $1$ &  $\frac{1}{ \lceil\frac{k}{\delta+1}\rceil}$  \\
-		&&\\[-0.8em]\hline
-		%$~~~~~~~~~~~~~~~~~~~~~f$ 
-		Fault-tolerance level $(f)$& $\frac{n}{2} - 1$     &  $\frac{n-k}{2}$  \\%\hline
+	\begin{tabular}{ l|c|c|c}
+		& Cassandra &  CassandrEAS  & ARES\\ \hline
+		Storage cost/server & $1$ &  $\frac{1}{ \lceil\frac{k}{\delta+1}\rceil}$ 
+		& $(\delta +1)\frac{n}{k}$ \\
+	
+		$f$, max crashes & $\frac{n}{2} - 1$  &  $\frac{n-k}{2}$ & $\frac{n-k}{2}$ \\%\hline
 		%Read (Write) cost & $1$ &  $\frac{n}{ \lceil\frac{\delta+1}{k}\rceil}$\\\hline
 	\end{tabular}
-	\caption{Cassandra (Quorum) vs. CassandrEAS}
+	\caption{Comparison of fault-tolerance level and storage-cost for Cassandra (Quorum), CassandrEAS and ARES}.
 	\label{t:comparison}
 	%\caption{Comparison of key performance metrics among the three implementations of strong consistency in Cassandra. $\delta$
 	%	is the maximum number of writes concurrent with any read.}
 \end{table}
 
 In practical systems, the number of concurrent writes \underline{on the \textit{same} KV-pair} is small in most cases, since each operation completes in the order of $100~ms$. If CassandrEAS with $n=9$ is configured to tolerate $f=2$ crashed servers, and support $\delta = 3$ concurrent writes. In this case, $k = 5$, so the data storage cost at each server becomes
-
-\[
-\frac{1}{ \lceil\frac{k}{\delta+1}\rceil} = \frac{1}{ \lceil\frac{5}{3+1}\rceil} = \frac{1}{2}
-\]
+%\[
+$\frac{1}{ \lceil\frac{k}{\delta+1}\rceil} = \frac{1}{ \lceil\frac{5}{3+1}\rceil} = \frac{1}{2}$.
+%\]
 
 In comparison, Cassandra's storage cost is $1$, as each server stores the original data. Hence, CassandrEAS saves $50 \%$ of storage space. If we have the configuration $n=7, f=1, \delta=1$, then $k=5$ and the storage cost of CassandrEAS is $\frac{1}{3}$, a $67\%$ reduction in storage space.
 
