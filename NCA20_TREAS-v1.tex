@@ -110,7 +110,7 @@
 \newcommand{\daputdata}[2]{{\act{put-data}(#2)}}
 \newcommand{\dagetdata}[1]{{\act{get-data}()}}
 \newcommand{\dagettag}[1]{{\act{get-tag}()}}
-\newcommand{\treas}{{\sc Areas}}
+\newcommand{\treas}{{\sc Ares}}
 \newcommand{\oreas}{{\sc Oreas}}
 \newcommand{\oreasSpace}{\oreas\hspace{2pt}}
 
@@ -155,6 +155,8 @@
 %%%%%%%%%%%%
 
 %-------------------------------------------------------------------------------
+\IEEEoverridecommandlockouts
+\IEEEpubid{\makebox[\columnwidth]{978-1-7281-8326-8/20/\$31.00~\copyright{}2020 IEEE \hfill}\hspace{\columnsep}\makebox[\columnwidth]{ }}
 \begin{document}
 	%-------------------------------------------------------------------------------
 	%don't want date printed
@@ -165,14 +167,14 @@
 	% or CassandrEAS: Strongly Consistent Erasure Coding KV-Store
 	%\maketitle
 	
-	\title{CassandrEAS: Highly Available and Storage-Efficient Distributed Key-Value Store with Erasure Coding\thanks{*Authors ordered alphabetically.}}
+	\title{CassandrEAS: Highly Available and Storage-Efficient Distributed Key-Value Store with Erasure Coding\thanks{*Authors ordered alphabetically. $\dagger$Yingjian worked on this project when he was affiliated with Boston College. Authors from Boston College are supported in part by National Science Foundation award CNS1816487. Any opinions, findings, and conclusions or recommendations expressed here are those of the authors and do not necessarily reflect the views of the funding agencies or the U.S. government.}}
 	
 \author{
-\IEEEauthorblockN{Viveck Cadambe*}
+\IEEEauthorblockN{Viveck R. Cadambe*}
 \IEEEauthorblockA{
 	\textit{EE Department}\\ Pennsylvania State University
-	\\Park, PA, USA\\
-	viveck@engr.psu.edu
+	\\University Park, PA, USA\\
+	viveck@psu.edu
 }
 \and	
 \IEEEauthorblockN{Kishori M. Konwar, Muriel Medard}
@@ -180,11 +182,16 @@
 Cambridge, USA \\
 \{kishori, medard\}@mit.edu}
 \and
-\IEEEauthorblockN{Haochen Pan, Lewis Tseng, Yingjian Wu}
+\IEEEauthorblockN{Haochen Pan, Lewis Tseng}
 \IEEEauthorblockA{\textit{Dept of CS}\\ Boston College\\
 %\textit{Boston College}\\
-Boston,USA \\
-\{haochen.pan, lewis.tseng, wuit\}@bc.edu}
+Boston, USA \\
+\{haochen.pan, lewis.tseng\}@bc.edu}
+\and
+\IEEEauthorblockN{Yingjian Wu$\dagger$}
+\IEEEauthorblockA{\textit{Dept of CSE}\\ UCSD\\
+San Diego, USA \\
+yiw079@ucsd.edu}
 }
 \maketitle
 	%{\Large CassandrEAS: Making Cassandra Strongly Consistent and Efficient using Erasure Coding}
@@ -195,11 +202,11 @@ Boston,USA \\
 		
 		%\delete{Cassandra is a popular NoSQL database, often used as a distributed key-value store (KV-store) in industry. To increase availability and fault-tolerance, Cassandra replicates data on multiple servers, which unfortunately wastes storage space in the case of high replication. Recently, there has been a series of efforts on integrating erasure coding (EC) with various types of KV-store to reduce storage cost. To our knowledge, there is \textit{no} EC-based protocol for Cassandra or similar quorum-based KV-stores owing to the difficulties in integrating erasure coding with quorum-based design.}
 %
-		In this work, we propose a erasure coding-based protocol that implements a key-value store with atomicity and \textit{near-optimal storage cost}. 
+		In this work, we propose an erasure coding-based protocol that implements a key-value store with atomicity and \textit{near-optimal storage cost}. 
 		Our protocol supports concurrent read and write operations while tolerating asynchronous communication and crash failures of any client and some fraction of servers. 
-		One novel feature of our protocol is a \textit{tunable knob} between the number of supported concurrent operations, availability, and storage cost. 
+		One novel feature is a \textit{tunable knob} between the number of supported concurrent operations, availability, and storage cost. 
 		
-		We implement our protocol into  Cassandra, namely CassandrEAS (Cassandra + Erasure-coding Atomic Storage). Evaluation using YCSB on Google Cloud Platform with different configurations shows that  CassandrEAS incurs moderate penalty on latency and throughput, yet saves significant amount of storage space. 
+		We implement our protocol into  Cassandra, namely CassandrEAS (Cassandra + Erasure-coding Atomic Storage). Extensive evaluation using YCSB on Google Cloud Platform shows that  CassandrEAS incurs moderate penalty on latency and throughput, yet saves significant amount of storage space. 
 		
 		%For example, if we use an $[5, 3]$ MDS code in a 5-server cluster, then storage cost is $1.67$ per unit of data, instead of $5$ as in the case of the vanilla Cassandra. 
 		
@@ -222,7 +229,7 @@ Boston,USA \\
 		%We evaluate the performance using realistic benchmark tool, YCSB, in Google Cloud Platform. Our evaluation shows that XXX.
 	\end{abstract}
 \begin{IEEEkeywords}
- Strong consistency, fault-tolerence, distributed storage
+atomicity, erasure-coding, KV store
 \end{IEEEkeywords}
 	\input{intro}
 

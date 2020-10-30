@@ -2,16 +2,15 @@
 \label{sec:intro}
 
 
-% Do I want to say scalability?
 
 % Goal
 Storage systems is the foundational platform for modern Internet services. Ever increasing reliance on massive data sets has forced developers to move towards a new class of scalable storage systems known as NoSQL key-value stores (KV-store). Most distributed NoSQL KV-stores (e.g., Cassandra \cite{Cassandra}, Riak \cite{Riak}, Dynamo \cite{Dynamo}) support a flexible data schema and simple GET/PUT (or Read/Write) interface for reading and writing data items. 
 The data items are replicated at multiple servers to provide high fault-tolerance and availability. 
 
-One drawback of the replication-based approach is the high storage cost. Erasure coding (EC) has been integrated with other types of KV-store to reduce storage cost (e.g., Cocytus \cite{Cocytus2016} for in-memory KV-store  and Giza \cite{GIZA2017} for cross-datacenter KV-store).
+One drawback of the replication-based approach is the high storage cost. Erasure coding (EC) has been integrated with other types of KV-store to reduce storage cost (e.g., DepSky \cite{DepSky13} for cloud-of-clouds, Cocytus \cite{Cocytus2016} for in-memory KV-store  and Giza \cite{GIZA2017} for cross-datacenter KV-store).
 This work is motivated by the following question: \textit{is it possible to use erasure coding in a NoSQL KV-store to reduce storage cost while maintaining strong consistency with moderate performance penalty?} We provide an affirmative answer by introducing \textbf{CassandrEAS (Cassandra + Erasure-coding Atomic Storage)}, a customized version of Cassandra \cite{Cassandra} with a new EC-based storage protocol that achieves \textit{atomicity} \cite{lamport}, a form of strong consistency. 
 
-In this paper, we first present a novel quorum and erasure-code-based and storage cost optimized protocol called Two-Round Erasure coded Atomic Storage-Optimized (\treasmod{}). In addition to the improved storage cost, when compared to the existing erasure-code based algorithms, \treasmod{} algorithm is simple to implement as the high-level structure of the algorithm is very similar to the classic replication-based algorithm by Attiya, Bar-Noy and Dolev ~\cite{ABD96} and practical quorum storage ~\cite{Dynamo,pbs-vldb2012} for implementing strong consistency in distributed storage. \treasmod{} is a two-round protocol that uses logical timestamps, which obviates the reliance on  any physical clock to implement atomic KV-store. We also modify \treasmod{} to use physical timestamp that results in a single-round distributed storage protocol One-Round Erasure coding Atomic Storage (\oreas). Both algorithms are suitable for quorum-based KV-store.%, and we replace  Cassandra's replication  mechanism  by  our EC-based  protocols.
+In this paper, we first present a novel quorum and erasure-code-based and storage cost optimized protocol called Two-Round Erasure coded Atomic Storage-Optimized (\treasmod{}). In addition to the improved storage cost, when compared to the existing erasure-code based algorithms, \treasmod{} algorithm is simple to implement as the high-level structure of the algorithm is very similar to the classic replication-based algorithm by Attiya, Bar-Noy and Dolev ~\cite{ABD96} and practical quorum storage ~\cite{Dynamo,pbs-vldb2012}. \treasmod{} is a two-round protocol that uses logical timestamps, which obviates the reliance on  any physical (machine) clock to implement atomic KV-store. We also modify \treasmod{} to use physical timestamp that results in a single-round distributed storage protocol One-Round Erasure coding Atomic Storage (\oreas). Both algorithms are suitable for quorum-based KV-store.%, and we replace  Cassandra's replication  mechanism  by  our EC-based  protocols.
 
 
 
@@ -29,40 +28,41 @@ Inspired by the observation, this paper focuses on \textit{atomicity} \cite{lamp
 
 Cassandra provides high availability and scalability using a quorum-based (or peer-to-peer) design.
 It replicates data on multiple servers, and each server can serve any read/write request from clients 
-using the practical quorum approach (or Dynamo-style quorum) \cite{pbs-vldb2012}. 
-The approach does not use master node or consensus protocol to coordinate servers; hence, Cassandra has a high performance without a single point of failure. 
-Cassandra's quorum-based design make it difficult to use prior EC-based solutions \cite{Cocytus2016,GIZA2017}, which either use a master-based design or consensus-based protocol.
+using the practical quorum approach (or Dynamo-style quorum) \cite{pbs-vldb2012} for serving read and write operations. 
+The approach does not use master node or consensus protocol to coordinate servers; hence, Cassandra has high performance without a single point of failure.\footnote{Cassandra uses Paxos \cite{paxos} to support transactions, but it does \textit{not} use consensus for non-transaction operations, e.g., read and write operations. Following the design philosophy, our algorithms do not support transactions.}  
+Cassandra's quorum-based design make it difficult to use prior EC-based solutions \cite{Cocytus2016,GIZA2017,DepSky13}. Cocytus \cite{Cocytus2016} uses a master-based design, whereas Giza \cite{GIZA2017} is a consensus-based protocol. DepSky  \cite{DepSky13} does not provide atomicity. 
 
 \subsection*{Main Contributions}
 %\kishori{
 %In this paper, we present a novel quorum and erasure-code-based and storage cost optimized protocol called Two-Round Erasure coded Atomic Storage-Optimized (\treasmod{}). \treasmod{} is a two-round protocol uses logical timestamps, which obviates the reliance on  any physical clock to implement the consistency guarantees. Based on this, we modify \treasmod{} to use physical clock that results in a single-round distributed storage protocol One-Round Erasure coding Atomic Storage (\oreas). The use of physical timestamps enables us to  implement \oreas{} into Cassandra \cite{Cassandra2010}, which uses physical timestamps, and we refer to our implementation as  CassandrEAS. More precisely, we replace Cassandra's replication mechanism by our EC-based protocol.}
-In the theoretical contribution, we proposed two novel EC-based atomic storage protocols: \treasmod{} and \oreas. From the engineering perspective, we demonstrate that our protocols can be seamlessly integrated with a real-world system, Cassandra. We made minimum modification to the original Cassandra codebase, and Cassandra users can call Cassandra's original read and write API directly \textit{without} knowing the details of the algorithm.\footnote{Our algorithm does not support transaction; hence, those transaction-related APIs are not supported. Note that Cassandra uses Paxos \cite{paxos} to support transactions, and this is why \oreas{} cannot be directly applied.} 
-To the best of our knowledge, this is the first implementation in NoSQL KV-Store that uses erasure coding.\footnote{We will release our code on Github once the paper is accepted in hope that stimulate more discussion and evaluation on using erasure codes in similar systems.} 
+In the theoretical contribution, we propose two novel EC-based atomic storage protocols: \treasmod{} and \oreas. From the engineering perspective, we demonstrate that our protocols can be seamlessly integrated with a real-world system, Cassandra. We made minimum modification to the original Cassandra codebase, and Cassandra users can call Cassandra's original read and write API directly \textit{without} knowing the details of the algorithm.
+Our implementation can be found at \url{https://github.com/yingjianwu199868/cassandra/}
+%To the best of our knowledge, this is the first implementation in NoSQL KV-Store that uses erasure coding.\footnote{We will release our code on Github once the paper is accepted in hope that stimulate more discussion and evaluation on using erasure codes in similar systems.} 
 
 Using \treasmod{} and \oreas{}, CassandrEAS also provides availability and scalability at a similar level of Cassandra, because both systems do not use master or consensus.
 One interesting feature of our protocols is a \textit{tunable knob} that allows clients to choose the desired level of availability (i.e., the maximum number of tolerated server failures), storage cost, and the number of supported concurrent operations. If there are more server failures or more concurrent operations than the specified parameters, then CassandrEAS may return stale value or fail to serve client's request. A protocol for self-stabilization, reconfiguration, or recovery is left as an interesting future work.
 
-For evaluation, we deploy CassandrEAS in Google Cloud Platform (GCP) and conduct extensive experiments using the Yahoo! Cloud Service Benchamarking (YCSB) workload generator \cite{YCSB:2010}. YCSB is a realistic tool used to benchmark many KV-stores.
+For evaluation, we deploy CassandrEAS in Google Cloud Platform (GCP) and conduct extensive experiments using the Yahoo! Cloud Service Benchamarking (YCSB) workload generator \cite{YCSB:2010}. YCSB is a practical tool used to benchmark many KV-stores.
 %The implementation is discussed in Section \ref{s:implementation} and we present 
 Our evaluation results in Section \ref{s:evaluation} indicate that CassandrEAS incurs moderate performance penalty, yet saves significant amount of storage space.
 
 \paragraph*{Cassandra vs. CassandrEAS}
 Table \ref{t:comparison} summarizes the comparison between Cassandra and CassandrEAS when storing one unit of data (i.e., data size is normalized to $1$). We do not count the size of meta-data such as timestamps. Erasure coding is more useful when dealing with larger data (say in terms of $100~B$s), so meta-data size is practically negligible. 
-In our presentation, $n$ denotes the number of servers that store the data, $\delta$ represents \underline{the maximum number of writes concurrent with any read on} \underline{the \textit{same} key-value pair}, and $f$ is the maximum number of tolerated crash servers.
-To make our formula compact, let $k = n-2f$. For Cassandra, we choose the majority quorum configuration.
+In the paper, $n$ denotes the number of servers that store the data, $\delta$ represents \underline{the maximum number of writes concurrent with any read on} \underline{the \textit{same} key-value pair}, and $f$ is the maximum number of tolerated crash servers.
+For compactness, let $k = n-2f$. For Cassandra, we choose the majority quorum configuration.
 % For Cassandra, we choose the quorum configuration. That is, both the read quorum and write quorum are of size $\frac{n}{2}+1$.
 
 \begin{table}[h]
 	\centering
 	\begin{tabular}{ l|c|c|c}
-		& Cassandra &  CassandrEAS  & ARES\\ \hline
+		& Cassandra &  CassandrEAS  & \treas\\ \hline
 		Storage cost/server & $1$ &  $\frac{1}{ \lceil\frac{k}{\delta+1}\rceil}$ 
-		& $(\delta +1)\frac{n}{k}$ \\
+		& $(\delta +1)\frac{1}{k}$ \\
 	
 		$f$, max crashes & $\frac{n}{2} - 1$  &  $\frac{n-k}{2}$ & $\frac{n-k}{2}$ \\%\hline
 		%Read (Write) cost & $1$ &  $\frac{n}{ \lceil\frac{\delta+1}{k}\rceil}$\\\hline
 	\end{tabular}
-	\caption{Comparison of fault-tolerance level and storage-cost for Cassandra (Quorum), CassandrEAS and ARES}.
+	\caption{Comparison of fault-tolerance level and storage-cost for Cassandra (Quorum), CassandrEAS and \treas}.
 	\label{t:comparison}
 	%\caption{Comparison of key performance metrics among the three implementations of strong consistency in Cassandra. $\delta$
 	%	is the maximum number of writes concurrent with any read.}

@@ -9,7 +9,7 @@ a set $\wSet$ of writers, a set $\rdSet$ of readers and  $\srvSet$, a set of ser
  Servers host data elements (replicas or encoded data fragments).
 Each writer is allowed to modify the value of a shared object, and each reader is allowed to obtain 
 the value of that object. 
-Processes communicate via \myemph{messages} through 
+Nodes communicate through 
 \myemph{asynchronous}, but \myemph{reliable} channels. 
 %%Let $\idSet = \cSet\cup\reconSet\cup\srvSet$. 
 %In a read/write object implementation, we assume that the object may take a value from a set $\valSet$. 
@@ -59,8 +59,7 @@ An \textit{execution} of an algorithm $A$  is an alternating sequence of states
 and actions of $A$ starting with the initial state. 
 An execution $\EX$ is \textit{well-formed} if any process invokes one operation
 at a time and it is \textit{fair} if enabled actions perform a step infinitely often. In the rest of the paper 
-we consider executions that are fair and well-formed. A process
-$\pr$ \textit{crashes} in an execution if it stops taking steps; otherwise $p$ is \textit{correct} or \textit{non-faulty}.
+we consider executions that are fair and well-formed. A node \textit{crashes} in an execution if it stops taking steps; otherwise it is  \textit{non-faulty}.
 
 
 \myparagraph{Write and Read Operations.}
@@ -84,12 +83,11 @@ any single object at the servers during $\op$, and  (iii) \myemph{message bit co
 which measures the size of the messages used during $\op$. 
 }
 We define the total storage cost as the size of the
-data stored across all servers, at any point during the execution of the algorithm. The
-communication cost associated with a read or write operation is the size of the total data that
-gets transmitted in the messages sent as part of the operation. We assume that metadata,
+data stored \textit{across all servers}, at any point during the execution of the algorithm. The
+communication cost associated with a read or write operation is the size of the total data transmitted in the messages sent as part of the operation. We assume that metadata,
 such as version number, process ID, etc. used by various operations is of negligible size, and therefore,  ignore in the calculation of storage and communication cost. Further, we normalize
 both the costs with respect to the size of the value v; in other words, we compute the costs
-under the assumption that v has size 1 unit.
+assuming that v has size 1 unit.
 %\lewis{This is repetitive? Didn't we already discuss this before? Second paragraph of this section.}
 %\blue{Yes, now removed}
 
@@ -98,9 +96,9 @@ under the assumption that v has size 1 unit.
 
 \begin{lemma}
 For any $k$,  $1 \leq k \leq n -2f$. (i) If $Q_1$ ,$Q_2 \in \mathcal{Q}$,
-then $|Q_1 \cap Q_2 | \geq k$. (ii) If the number of failed servers is
+then $|Q_1 \cap Q_2 | \geq k$. (ii) If the number of faulty servers is
 at most $f$ , then $Q$ contains at least one quorum set $Q$ of
-non-failed servers.
+non-faulty servers.
 \end{lemma}
 %\myparagraph{Storage and Communication Cost.} We define the total storage cost as the size of the
 %data stored across all servers, at any point during the execution of the algorithm. The
@@ -141,5 +139,5 @@ non-failed servers.
 \myparagraph{Liveness of operations.} We require algorithms to satisfy certain liveness properties, specifically, in every fair execution that satisfies certain restrictions in terms of the number of failed nodes, we require every operation by a non-faulty client 
 completes eventually, irrespective of the behavior of other clients.  
 Most replication-based atomic memory algorithms guarantee liveness, as long as certain number of servers remain 
-non-faulty, however, similar fault-tolerance levels can be achieved erasure-code based systems only in 
-carefully designed algorithms. Moreover, there are some lower bound results on the  storage-cost for erasure-coded atoomic memory algorithms in the presence of faulty clients~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume some restricting assumptions.  CASGC, ORCAS-A and ORCAS-B~\cite{DGL08} assume a bound on the number of concurrent operation. In the same vein, \treasmod{} assumes a known bound on the number of concurrent writes with a read to achieve liveness. 
+non-faulty; however, similar fault-tolerance levels can be achieved erasure-code based systems only in 
+carefully designed algorithms. Moreover, there are some lower bound results on the  storage-cost for erasure-coded atomic memory algorithms in the presence of faulty clients~\cite{cadambe2016information, SCCK15}. As a result, to  circumvent this restriction many authors assume some restricting assumptions.  CASGC, ORCAS-A and ORCAS-B~\cite{DGL08} assume a bound on the number of concurrent operations. In the same vein, our protocol assume a known bound on the number of concurrent writes with a read to achieve liveness. 

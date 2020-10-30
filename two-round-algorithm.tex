@@ -4,13 +4,6 @@ The pseudo-code for  ~\treasmod{} is presented in  Alg.~\ref{fig:treasmod}.
 %
 The algorithm uses an MDS code, with encoding function $\Phi^{(n,\ell)}: \mathbb{F}^{\ell} \rightarrow \mathbb{F}^{n}$ where, $\mathbb{F}$ represents the finite field over which encoding is performed, $n$ represents the length of the code, and $\ell = {\lceil \frac{k}{\delta+1} \rceil} $ represents the dimension of the code. 
 
-\treasmod{}  shares some similarities with ABD \cite{ABD96} as well as ~\treas~\cite{NicolaouC0KML19}. Specifically, in \treasmod{}, like ~\treas{}, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$, logical timestamp, is garbage collected, the server stores a tuple of the form $(t, \bot)$. However, unlike ~\treas{}, in \treasmod{} each server stores only coded element, similar to ABD~\cite{ABD96}. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however the server will continue to store a tuple of the form $(\tau_{max},\bot)$.
-
-While in~\treas{}, each server stores $\delta+1$ coded elements of a code with dimension $k$, in \treasmod{}, each server stores \emph{one} coded element of dimension ${\lceil \frac{k}{\delta+1} \rceil}$. Since the size of each coded element is effectively a fraction $\frac{1}{k}$ the size of the value, the server storage cost in~\treas{} normalized by the size of the object is $\frac{\delta+1}{k},$ whereas the storage cost of \treasmod{} is $\frac{1}{\lceil \frac{k}{\delta+1}\rceil}$  since 
-$  \frac{\delta+1}{2 k} < \frac{1}{\lceil \frac{k}{\delta+1}\rceil} \leq \frac{\delta+1}{k}$
-the storage cost of \treasmod{} is no worse than the storage cost of ~\treas{}, and can be up to twice as efficient. For instance, if we have $n=9$ servers, and we use quorums of size $6$ so that $k=3$, for a concurrency of $\delta=1$, the storage cost of ~\treas{} is $2/3$, whereas the cost of \treasmod{} is $\frac{1}{2}.$ For the same system, if quorums of size $7$ are used, and a concurrency can be bounded by $\delta=3$, then the storage cost of~\treas{} is $4/5=0.8$ whereas \treasmod{} has a storage cost of $1/2=0.5$. 
-
-
 % However, liveness is  guaranteed under the assumption that the number of write operations concurrent with a read  operation is at most $\delta$. The precise definition of concurrency depends on the algorithm itself, and appears later in this section. The \treasmod{}~algorithm has significantly reduced storage and communication cost, compared to replication, when $\delta$ is limited.
 %Expressing an atomic algorithm in terms of the DAP primitives serves multiple purposes.
 %First, describing an algorithm according to template algorithm $A_1$  allows one to proof
@@ -49,11 +42,10 @@ Notice that tags could be defined in any totally ordered domain and given that t
 there can be a direct mapping to the domain we assume. 
 % and we denote by  $\mathcal{T}$  the set of all possible tags. 
 For any  $\tg{1}, \tg{2} \in \mathcal{T}$, where $
-\tau_i = (z_i, w_i)$,  we define  $\tg{2} > \tg{1}$ if $(i)$ $\tg{2}.z > z_1$ or $(ii)$ $z_2 = z_1$ and $w_2 > w_1$.
+\tau_i = (z_i, w_i)$,  we define  $\tg{2} > \tg{1}$ if $(i)$ $\tg{2}.z_2 > \tg{1}.z_1$ or $(ii)$ $\tg{2}.z_2 = \tg{1}.z_1$ and $\tg{2}.w_2 > \tg{1}.w_1$.
 
 Each server $s_i$ stores one  state variable,  $List$,  which is a set of up to $(\delta + 1)$  (tag, coded-element) pairs. Initially the set at $s_i$ contains a single element, $List = \{ (t_0,  \Phi_i(v_0)\}$.  
- A read operation at a client is implemented based on the \act{get-data} and \act{put-data} steps; and a write operation is based on the \act{get-tag} and \act{put-data} steps. Below we describe these steps in more detail.
-%\sout{Below we describe the implementation of the DAPs.} 
+ A read operation at a client is implemented based on the \act{get-data} and \act{put-data} steps; and a write operation is based on the \act{get-tag} and \act{put-data} steps.  
  
 %\lewis{What is DAPs?}
 %
@@ -68,7 +60,7 @@ Once the client receives the tags from $\left\lceil \frac{n+k}{2} \right\rceil$ 
 %}
 
 %\kishori{
-$\act{put-data}(\tup{t_w, v})$: During the  execution of the primitive  $\act{put-data}(\tup{t_w, v})$,  a client 
+$\act{put-data}(\tup{t_w, v})$: During  $\act{put-data}(\tup{t_w, v})$,  a client 
 % computes the coded elements for each of the $n$ servers, and 
 sends the  pair  $(t_w, \Phi_i(v))$ to each server $s_i\in\mathcal{S}$.  
 When a server $s_i$ receives a message $(\text{\sc put-data}, t_w, c_i)$ , it adds the pair in its local $List$, 
@@ -90,7 +82,7 @@ $\dagetdata{c}$:	A  client, during the execution of a  $\dagetdata{c}$ primitive
 Note that in the case where anyone of the above conditions is not satisfied the corresponding read operation does not complete.
 %}
 
-The main technical aspect in which {\treasmod} differs with, in terms of correctness, in comparison with ~\treas{} is the liveness proof. We argue that despite the changes, {\treasmod} guarantees termination of every read operation whose concurrency is below $\delta$.
+The main technical aspect in which {\treasmod} differs with ~\treas{} is the liveness proof. We argue that despite the changes, {\treasmod} guarantees termination of every read operation whose concurrency is below $\delta$.
 %} 
 
 %\remove{
@@ -199,8 +191,8 @@ The main technical aspect in which {\treasmod} differs with, in terms of correct
 	\begin{algorithmic}[2]
 		{\footnotesize
 		\begin{multicols}{2}
-				\State{at each server $s_i \in \mathcal{S}$}
-				\Statex
+				\State{/* at each server $s_i \in \mathcal{S}$ */}
+				%\Statex
 				\State{\bf State Variables:}%{ 										
 					%\Statex $(t_{loc}, v_{loc}) \in \mathcal{T} \times {\mathcal V}$, initially   $(t_0, v_0)$
 					%\Statex $status \in \{active, repair\}$, initially $active$
@@ -312,13 +304,13 @@ $\act{get-data}$ operation then it must be that either $t_{\pi}=t_0$ or $t_{\pi}
 	
 			\begin{proof}
 Consider any well-formed execution $\beta$ of \treasmod, all of whose invoked read or write operations complete. Let $\Pi$ denote the set of all completed read and write operations in $\beta$. We first define a partial order ($\prec$) on $\Pi$. 
-For any completed write operation $\pi$, we define $tag(\pi)$ as the variable  $t_w$. For any complete read operation $\pi$, we define $tag(\pi)$ as the value of $t_r$. 
+For any completed write operation $\pi$, we define $tag(\pi)$ as the variable  $t_w$. For any completed read operation $\pi$, we define $tag(\pi)$ as the value of $t_r$. 
 Now, in $\Pi$ the relation $\prec$ is defined as follows: For any $\pi, \phi \in \Pi$, we say $\pi \prec \phi$  if 
 one of the following holds: $(i)$  $tag(\pi)  < tag(\phi)$, or $(ii)$ $tag(\pi) = tag(\phi)$, and  $\pi$ and $\phi$ are write and read 
-operations, respectively. The proof of atomicity is based on proving 				
- the properties $P1$, $P2$ and $P3$ of an execution (Lemma 13.16 in ~\cite{Lynch1996}). Let $\phi$ and $\pi$ denote two operations in $\Pi$ such that $\phi$ completes before $\pi$ starts in $\beta$.  Let  $c_{\phi}$ and $c_{\pi}$ denote the clients that invokes $\phi$ and $\pi$, respectively. 
+operations, respectively. Atomicity is proved by using 
+Lemma 13.16 in ~\cite{Lynch1996}, which essentially requires any execution to hold four properties to guarantee atomicity. Let us denote them by $P1$, $P2$, $P3$ and $P4$. Property $P1$ is easily satisfied by our executions, so we show that any execution satisfies the  remaining properties. Let $\phi$ and $\pi$ denote two operations in $\Pi$ such that $\phi$ completes before $\pi$ starts in $\beta$.  Let  $c_{\phi}$ and $c_{\pi}$ denote the clients that invokes $\phi$ and $\pi$, respectively. 
 
-\emph{Property $P1$} We want to show that $\pi \not\prec \phi$. Below we consider the four possible cases of $\phi$ and $\pi$.
+\emph{Property $P2$} We want to show that $\pi \not\prec \phi$. Below we consider the four possible cases of $\phi$ and $\pi$.
 
 \emph{ $\phi$, $\pi$ are writes:} It is enough to prove that $tag(\pi) > tag(\phi)$. Consider the $\act{put-data}$ phase of $\phi$, where the writer $c_{\phi}$  sends the pair $(t_w, v)$ to all 
 servers in $\mathcal{S}$. Let us denote the  set $\mathcal{S}_{\phi}$ of $\left\lceil \frac{n+k}{2} \right\rceil$ servers  that responds to $c_{\phi}$ during the \act{put-data} phase.  
@@ -378,15 +370,15 @@ $S_{\phi} \cap S_{\pi} \neq \emptyset $. Therefore, there is at least one of the
  %\lewis{many missing links and several occurrence of DAP.} \blue{fixed}
 
 
-\emph{Property $P2$} This follows from the construction of tags, and the definition of the partial order ($\prec$).
+\emph{Property $P3$} This follows from the construction of tags, and the definition of the partial order ($\prec$).
 
-\emph{Property $P3$} This follows from the definition of partial order ($\prec$), and by noting that value returned by a read operation $\pi$ is simply the value associated with $tag(\pi)$.
+\emph{Property $P4$} This follows from the definition of partial order ($\prec$), and by noting that value returned by a read operation $\pi$ is simply the value associated with $tag(\pi)$.
 %
 				\end{proof}
 				
 			
 			\remove{	The above definition captures all the write operations that overlap with the read, until the time the reader has all data needed to attempt decoding a value. However, we ignore those write operations that might have started in the past, and never completed yet, if their tags are less than that of any write that completed before the read started. This allows us to ignore write operations due to failed writers, while counting concurrency, as long as the failed writes are followed by a successful write that completed before the read started. }
-				\begin{theorem}[Liveness]  \label{thm:liveness_radonc}
+		\vspace{-2pt}		\begin{theorem}[Liveness]  \label{thm:liveness_radonc}
 					Let $\beta$ denote a well-formed and fair execution of \treasmod{} with parameters $[n, k, \delta]$ over a system of $n$ servers. If the number of write operations that are with any valid read  operation in $\beta$ bounded by $\delta,$ and the number of server failures is bounded by $\lceil \frac{n+k}{2}\rceil-1,$ then every operation in $\beta$ terminates. 
 				\end{theorem}
 				\begin{proof}
@@ -417,3 +409,9 @@ $S_{\phi} \cap S_{\pi} \neq \emptyset $. Therefore, there is at least one of the
 				 Now since $|\Lambda| < \delta$ hence $(t, \bot)$ cannot be in any server at $T_2$  because there are not enough concurrent write operations (i.e., writes in $\Lambda$) to garbage-collect the coded-elements corresponding to tag $t$, which also holds  for tag  $t^{*}_{max}$. In that case, $t$ must be in $Tag_{dec}^{\geq k}$, a contradiction.
 %
 				\end{proof}
+				
+\noindent\textit{\treasmod{} vs. \treas{} and ABD:}~~\treasmod{}  shares some similarities with ABD \cite{ABD96} as well as ~\treas~\cite{NicolaouC0KML19}. Specifically, in \treasmod{}, like ~\treas{}, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$, logical timestamp, is garbage collected, the server stores a tuple of the form $(t, \bot)$. Unlike ~\treas{}, in \treasmod{} each server stores only coded element, similar to ABD~\cite{ABD96}. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however, the server will continue to store a tuple of the form $(\tau_{max},\bot)$.
+
+While in~\treas{}, each server stores $\delta+1$ coded elements of a code with dimension $k$, in \treasmod{}, each server stores \emph{one coded element} of dimension ${\lceil \frac{k}{\delta+1} \rceil}$. Since the size of each coded element is effectively a fraction $\frac{1}{k}$ the size of the value, the server storage cost in~\treas{} normalized by the size of the object is $\frac{\delta+1}{k},$ whereas the storage cost of \treasmod{} is $\frac{1}{\lceil \frac{k}{\delta+1}\rceil}$  since 
+$  \frac{\delta+1}{2 k} < \frac{1}{\lceil \frac{k}{\delta+1}\rceil} \leq \frac{\delta+1}{k}$
+the storage cost of \treasmod{} is no worse than the storage cost of ~\treas{}, and can be up to twice as efficient. For instance, if we have $n=9$ servers, and we use quorums of size $6$ so that $k=3$, for a concurrency of $\delta=1$, the storage cost of ~\treas{} is $2/3$, whereas the cost of \treasmod{} is $\frac{1}{2}.$ For the same system, if quorums of size $7$ are used, and a concurrency can be bounded by $\delta=3$, then the storage cost of~\treas{} is $4/5=0.8$ whereas \treasmod{} has a storage cost of $1/2=0.5$. 

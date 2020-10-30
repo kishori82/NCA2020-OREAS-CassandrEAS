@@ -2,12 +2,12 @@
 
 \subsection{Erasure Coding Storage Systems}
 Erasure coding (EC) is a space-efficient solution for data storage. 
-EC has been traditionally used with great success for storage cost reduction in \textit{write-once, read-many-times} data stores (e.g., \cite{rashmi_fast15, dimakis2011survey, sathiamoorthy, HuaSimXu_etal_azure, DepSky}). Recently there is an increasing interest in using EC in update-many-times, read-many-times data stores. As observed in \cite{Cocytus2016,GIZA2017}, with the advancement of hardware, it is possible to perform encoding/decoding in a real-time fashion.
+EC has been traditionally used with great success for storage cost reduction in \textit{write-once, read-many-times} data stores (e.g., \cite{rashmi_fast15, dimakis2011survey, sathiamoorthy, HuaSimXu_etal_azure, DepSky13}). Recently there is an increasing interest in using EC in update-many-times, read-many-times data stores. As observed in \cite{Cocytus2016,GIZA2017}, with the advancement of hardware, it is possible to perform encoding/decoding in a real-time fashion.
 EC also has the potential to significantly reduce network bandwidth, as well as for system maintenance (such as repairing failed servers).
-Therefore, both information theory and system research communities have investigated the usage of erasure coding to reduce various kind of costs, e.g., \cite{dimakis2010network, rashmi2016ec, tamo2014family, wang2018multi}.
+Therefore, both information theory and system research communities have investigated the usage of erasure coding to reduce various kind of costs, e.g., \cite{dimakis2010network, rashmi2016ec, tamo2014family}. Notably, \cite{wang2018multi} developed code constructions with constraints motivated by consistency requirements in storage, and the coding methodology of \treasmod{} and \oreas{} are based on  \cite{wang2018multi}. 
 
 % Prior Work
-Two recent systems Cocytus \cite{Cocytus2016} and Giza \cite{GIZA2017} studied the applicability of erasure coding in other types of KV-stores. 
+Three recent systems DepSky \cite{DepSky13}, Cocytus \cite{Cocytus2016} and Giza \cite{GIZA2017} studied the applicability of erasure coding in other types of KV-stores. DepSky \cite{DepSky13} uses erasure coding for efficient storage in cloud-of-clouds; however, it does \textit{not} support atomicity.
 Giza~\cite{GIZA2017}, Microsoft's proprietary storage,  is a Fast-Paxos-based  multi-version cross-data center strongly consistent object store used in Microsoft's OneDrive storage system. Giza servers store erasure-coded elements instead of the original data to significantly reduce storage cost. 
 Cocytus~\cite{Cocytus2016} is a master-based in-memory KV-store that guarantees strong consistency and reduces storage cost using erasure coding.  For each key,  value is erasure coded and the coded elements are stored among a subset of servers. In addition, the master server maintains a full copy of the value to provide high availability for read operations. 
 %Cocytus uses a master and Giza uses consensus to coordinate servers.
@@ -17,8 +17,7 @@ Therefore, we have to design a new EC-based protocol for using erasure coding in
 
 The distributed computing community also shows interest in using erasure coding.
 EC-based algorithms for strongly consistent storage are an active area of research in theory community, e.g., \cite{CadambeLMM17, SODA2016, LDS2017, NicolaouC0KML19}.  SODA\cite{SODA2016} described an algorithm to achieve optimal storage cost; however, it pays a 
-higher write communication cost. 
-None of these algorithms have been integrated or implemented real-world systems. It is not clear how to adapt them into practical systems.
+higher write communication cost.  It is not clear how to adapt or integrate them into real-world practical systems.
 
 
 %Theory community also shows interest in using erasure coding.

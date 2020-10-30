@@ -154,16 +154,16 @@ the maximum number of writes concurrent with any read operation, and $k = n-2f$.
 \label{s:CassandrEAS}
 
 \subsection{Implementation}
-We share our implementation experience here in hope to lower the barrier of implementing other replication- or EC-based protocols in Cassandra in the future.
+We share our implementation experience here in hope to lower the barrier of implementing other replication- or EC-based protocols in Cassandra in the future.\footnote{We also has a separate paper that documents the implementation and benchmarking of other replication-based storage protocols in Cassandra \cite{Tseng_Cass}.}
 We have two main goals in our implementation: (i)
-make minimum modification to the original Cassandra codebase;%, e.g., using Cassandra's original way of communication between servers; 
+make minimum modification to the original Cassandra codebase; %, e.g., using Cassandra's original way of communication between servers; 
 %For example, we try not to introduce new complicate data structure; and 
  (ii)
 allow Cassandra users to use our implementation \textit{without} knowing the details of \oreas. That is, users can use the same Cassandra API in our system. 
 The implementation turns out to be a difficult task because we are constrained to using only Cassandra's internal tools and data structures for communication and coordination. We spent enormous amount of time to decompose and understand Cassandra's internal logic because the codebase is not well documented and often provide poor comments. 
 The version of Cassandra (version 3.11) that we used to develop contains around 57,000 LoC in Java. 
 We also implemented the algorithm \treas, which uses logical timestamp to deal with loosely synchronized clock.
-Our implementation of both algorithms consists of around 2,000 LoC.
+Our implementation of both algorithms consists of around 2,000 LoC. We did not implement our protocols as a middleware because the protocols require system information (e.g., timestamps), which is not revealed externally.
 
 %\vspace{3pt}
 %\noindent\textbf{Data Model}~~
@@ -191,7 +191,7 @@ Recall that we do not want to introduce new data structure, so we choose to use 
 %\vspace{3pt}
 %\noindent\textbf{Erasure Coding}~~
 %\subsection{Erasure Coding}
-CassandrEAS uses BackBlaze Reed-Solomon Code.\footnote{https://github.com/Backblaze/JavaReedSolomon}  These details are presented in our technical report.
+CassandrEAS uses BackBlaze Reed-Solomon Code.%\footnote{https://github.com/Backblaze/JavaReedSolomon}  These details are presented in our technical report.
 
 
 \begin{figure*}[!ht]
@@ -236,12 +236,15 @@ CassandrEAS uses BackBlaze Reed-Solomon Code.\footnote{https://github.com/Backbl
 	%		\caption{throughput vs. large data size}
 	%		\label{fig:throughput-size-large}
 	%	\end{subfigure}    	
-	\caption{Comparison of latency and throughput of different configurations}\label{fig:evaluation}
+	\caption{Comparison of latency and throughput of different configurations}\label{fig:evaluation} 
+	\vspace{-10pt}
 \end{figure*}
-
 %\section{CassandrEAS: Evaluation}
+\vspace{-3pt}
+
 \subsection{Evaluation}
 \label{s:evaluation}
+\vspace{-3pt}
 
 We evaluate the performance of CassandrEAS by comparing it to the vanilla Cassandra (version 3.11). 
 Cassandra-All requires the coordinator to hear from every server, whereas Cassandra-Quorum only requires to hear from a majority quorum of servers.
@@ -263,14 +266,9 @@ We use the Google Cloud Platform (GCP) as our testing platform.
 Each virtual machine (VM) is equipped with 4 virtual CPUs, 16 GB memory, and hosting Ubuntu 14.04 LTS.
 All VMs are located in datacenter us-east1-c (South Carolina).
 VMs use internal IP’s for communication.
-The average RTT between any two VMs is around $0.3$ ms (based on issuing command for 30 seconds), and TCP bandwidth measured by Iperf is around $7.5$ Gbits/sec. %We use ping to estimate RTT.
+The average RTT between any two VMs is around $0.3$ ms, and TCP bandwidth measured by Iperf is around $7.5$ Gbits/sec. %We use ping to estimate RTT.
 For most of evaluation, our cluster consists of 5 VMs, and 3 YCSB single-threaded clients. Thus, $\delta = 3$.
-
-%\paragraph{Workload}
-%\vspace{3pt}
-%\noindent\textbf{Workload}~~
-%\subsection{Workload}
-We use Yahoo! Cloud Serving Benchmark (YCSB) to generate realistic workload. We first insert a total of 30,000 KV-pairs, and each user performs 100,000 read or write operations. Recall that we have 3 YCSB clients, so we have 300,000 operations in total. We report the aggregated throughput, i.e., the sum of total operations per second across three YCSB clients. %We use the ``default Workload A'' provided by YCSB, whose operations follow Zipfian distribution.
+We use YCSB to generate realistic workload. We first insert a total of 30,000 KV-pairs, and each user performs 100,000 read or write operations. Recall that we have 3 YCSB clients, so we have 300,000 operations in total. We report the aggregated throughput, i.e., the sum of total operations per second across three YCSB clients. %We use the ``default Workload A'' provided by YCSB, whose operations follow Zipfian distribution.
 
 %We use the Yahoo! Cloud Serving Benchmark (YCSB) \cite{YCSB} for evaluation. We did not choose Cassandra's own stress test tool, because it does not provide a straightforward way to disable Batch operation. Furthermore, it uses auto-generated data for all columns predefined.
 %All of our YCSB workloads are modified from the ``default Workload A'' -- read-update workload. That is, YCSB first issues all-key insert before benchmarking, and we only benchmark on the read/update performances. 
@@ -307,7 +305,7 @@ We have tested our system with 7 servers and 1 crashed server, and observed mini
 We develop a consistency checker based on the approach specified in \cite{Lynch1996} to ensure that our implementation also provides this guarantee. Validating strong consistency requires precise clock synchronization across all servers. %, since it needs to use global clock to ordering operations and events. 
 This is impossible to achieve in a distributed system where clock drift is inevitable. To circumvent it, we deploy our CassandrEAS servers on a single machine and use Mininet \cite{MininetWebsite} to simulate the underlying network communication. Our checker then uses the machine time as the global clock. We collect multiple traces under different configurations with failures. The checker verifies that all traces we tested satisfy atomicity.
 
-
+\vspace{-3pt}
 \section{Summary}
 
-Strong consistency, storage efficiency, and availability are three key features for NoSQL KV-stores. We demonstrated that through  CassandrEAS -- erasure coding can be used to reduce storage cost while incurring moderate performance penalty. One interesting future work is to investigate how to apply \treasmod{} and \oreas{} in other NoSQL KV-stores.
+Strong consistency, storage efficiency, and availability are three key features for NoSQL KV-stores. We demonstrated that through  CassandrEAS -- erasure coding can be used to reduce storage cost while incurring moderate performance penalty. One interesting future work is to investigate how to apply \treasmod{} and \oreas{} in other NoSQL KV-stores, or to Cassandra to support transaction-related primitives beyond the simple read or write.\vspace{-3pt}
