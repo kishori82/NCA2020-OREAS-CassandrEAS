@@ -258,6 +258,8 @@ The main technical aspect in which {\treasmod} differs with ~\treas{} is the liv
 					\vspace{-1em}
 \end{algorithm*}	
 %}
+					\vspace{-1em}
+
 
 \myparagraph{Safety and Liveness  properties}\label{sec:treas_safety_liveness}
 Now we state the safety  and liveness properties of \treasmod.
@@ -410,7 +412,7 @@ $S_{\phi} \cap S_{\pi} \neq \emptyset $. Therefore, there is at least one of the
 %
 				\end{proof}
 				
-\noindent\textit{\treasmod{} vs. \treas{} and ABD:}~~\treasmod{}  shares some similarities with ABD \cite{ABD96} as well as ~\treas~\cite{NicolaouC0KML19}. Specifically, in \treasmod{}, like ~\treas{}, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$, logical timestamp, is garbage collected, the server stores a tuple of the form $(t, \bot)$. Unlike ~\treas{}, in \treasmod{} each server stores only coded element, similar to ABD~\cite{ABD96}. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however, the server will continue to store a tuple of the form $(\tau_{max},\bot)$.
+\noindent\textit{\treasmod{} vs. \treas{} and ABD:}~~\treasmod{}  shares some similarities with ABD \cite{ABD96} as well as ~\treas~\cite{NicolaouC0KML19}. Specifically, in \treasmod{}, like ~\treas{}, erasure coding is used, and each server stores a list of all the tags that it receives in the execution; even if the coded element corresponding to a tag $t$, logical timestamp, is garbage collected, the server stores a tuple of the form $(t, \bot)$. Unlike ~\treas{}, in \treasmod{} each server stores only coded element, similar to ABD~\cite{ABD96}. When a new tag-coded-element pair arrives  at a server, if the tag is larger than the highest locally stored tag $\tau_{max}$, then the server simply replaces the stored coded element by the newly arriving coded element; however, the server will continue to store tuple $(\tau_{max},\bot)$.
 
 While in~\treas{}, each server stores $\delta+1$ coded elements of a code with dimension $k$, in \treasmod{}, each server stores \emph{one coded element} of dimension ${\lceil \frac{k}{\delta+1} \rceil}$. Since the size of each coded element is effectively a fraction $\frac{1}{k}$ the size of the value, the server storage cost in~\treas{} normalized by the size of the object is $\frac{\delta+1}{k},$ whereas the storage cost of \treasmod{} is $\frac{1}{\lceil \frac{k}{\delta+1}\rceil}$  since 
 $  \frac{\delta+1}{2 k} < \frac{1}{\lceil \frac{k}{\delta+1}\rceil} \leq \frac{\delta+1}{k}$

@@ -29,7 +29,7 @@ Inspired by the observation, this paper focuses on \textit{atomicity} \cite{lamp
 Cassandra provides high availability and scalability using a quorum-based (or peer-to-peer) design.
 It replicates data on multiple servers, and each server can serve any read/write request from clients 
 using the practical quorum approach (or Dynamo-style quorum) \cite{pbs-vldb2012} for serving read and write operations. 
-The approach does not use master node or consensus protocol to coordinate servers; hence, Cassandra has high performance without a single point of failure.\footnote{Cassandra uses Paxos \cite{paxos} to support transactions, but it does \textit{not} use consensus for non-transaction operations, e.g., read and write operations. Following the design philosophy, our algorithms do not support transactions.}  
+The approach does not use master node or consensus protocol to coordinate servers; hence, Cassandra has high performance without a single point of failure.\footnote{Cassandra  supports many operations beyond simple reads and writes, e.g., it uses Paxos \cite{paxos} to support transactions. Here we do not support transactions; we restrict its use to support only reads and writes, for which Cassandra does \textit{not} use Paxos (see Sec. \ref{s:CassandrEAS} for more detail).}  
 Cassandra's quorum-based design make it difficult to use prior EC-based solutions \cite{Cocytus2016,GIZA2017,DepSky13}. Cocytus \cite{Cocytus2016} uses a master-based design, whereas Giza \cite{GIZA2017} is a consensus-based protocol. DepSky  \cite{DepSky13} does not provide atomicity. 
 
 \subsection*{Main Contributions}
@@ -66,6 +66,7 @@ For compactness, let $k = n-2f$. For Cassandra, we choose the majority quorum co
 	\label{t:comparison}
 	%\caption{Comparison of key performance metrics among the three implementations of strong consistency in Cassandra. $\delta$
 	%	is the maximum number of writes concurrent with any read.}
+	\vspace{-10pt}
 \end{table}
 
 In practical systems, the number of concurrent writes \underline{on the \textit{same} KV-pair} is small in most cases, since each operation completes in the order of $100~ms$. If CassandrEAS with $n=9$ is configured to tolerate $f=2$ crashed servers, and support $\delta = 3$ concurrent writes. In this case, $k = 5$, so the data storage cost at each server becomes

@@ -1,6 +1,7 @@
+\vspace{-5pt}
 
 \section{One-Round Erasure coding Atomic Storage}
-
+\vspace{-5pt}
 \begin{algorithm}[!ht]
 				\begin{algorithmic}[2]
 					{\footnotesize
@@ -26,10 +27,10 @@
 				}
 				\end{algorithmic}	
 				\caption{The reader/writer steps for implementing \oreas.}\label{fig:oreas:write}
-				\vspace{-1em}
+				\vspace{-1.5em}
 	\end{algorithm}
 
-Instead of logical timestamp (tags), \oreas{} relies on physical timestamps, i.e., machine time at the coordinator. The advantage of using logical timestamp is that strong consistency is guaranteed even in the presence of clock drift and absence of synchronized clocks among the various servers. The downside is that it requires, as in \treasmod{}, an additional communication round in order to gather the largest tag, which increases latency. On the other hand, in \oreas{}, the strong consistency guarantee is reliant on correctly synchronized clocks; however, write operations complete in one round.		
+Instead of logical timestamp (tags), \oreas{} relies on physical timestamps, i.e., machine time at the coordinator. The advantage of using logical timestamp is that strong consistency is guaranteed even in the presence of clock drift and absence of synchronized clocks. The downside is that it requires, as in \treasmod{}, an additional communication round in order to gather the largest tag. On the other hand, in \oreas{}, the strong consistency guarantee is reliant on correctly synchronized clocks; however, write operations complete in one round.		
 
 \remove{Distributed systems such as Cassandra, uses machine time as the tag (physical timestamp) instead of logical tags. It is worth nothing that machine time dependent systems are susceptible to clock drift leading to violation of safety. In order to implement \treasmod{} in such systems we modify \treasmod{} to \oreas{} by modifying the client step \treasmod{} as \ref{fig:oreas:write}. \lewis{This is incorrect. we also implement ABD and TREAS into Cassandra, so it's not like we \textbf{have} to use machine time to implement the algorithm in Cassandra.}
 \sout{uses tags, where  a tag $\tg{}$ is defined as a pair $(z, w)$ such that $w$ is an unique ID of the writer, and $z$ is the local machine time (when the writer issues a specific write operation). }
@@ -165,6 +166,15 @@ The version of Cassandra (version 3.11) that we used to develop contains around 
 We also implemented the algorithm \treas, which uses logical timestamp to deal with loosely synchronized clock.
 Our implementation of both algorithms consists of around 2,000 LoC. We did not implement our protocols as a middleware because the protocols require system information (e.g., timestamps), which is not revealed externally.
 
+\noindent\textbf{Data Model}~~Cassandra adopts the column-family data model, which provides a richer functionalities than a simple read-write object (KV-pair).  At a high level, Cassandra's data structure can be viewed as a table, where each row corresponds to data sharing the same key.
+CassandrEAS uses a row to store one KV-pair.
+Recall that the maximum number of writes concurrent with any read is denoted by $\delta$. 
+We use $2+2\delta$ columns for each row: key, value (a place holder for original data), and additional $2\delta$ columns for each version of the write.
+For each version, we use one column for timestamp (either physical or logical timestamp), and the other for the corresponding coded element.
+The reason that we need the value column is that it allows Cassandra to return the original data (decoded element) to the client. That column does \textit{not} store any data in storage. Each server only stores one coded element. The rest would be $\perp$ as discussed previously.
+
+
+
 %\vspace{3pt}
 %\noindent\textbf{Data Model}~~
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% DO I NEED THIS??? %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,9 +193,7 @@ In Cassandra's terminology, ``mutation'' is essentially a write operation that m
 (i) \textit{StorageProxy.java} is where the coordinator server handles the user's read or write operation. Specifically,
 \textsc{mutate} function handles Cassandra user's write operation whereas \textsc{fetchRows} function handles user's read operation. 
 The size of read/write quorums is also specified in this file; and (ii) \textit{MutationVerbHandler.java} where each server's database engine handles incoming write requests from the coordinator.
-Specifically, \textsc{doVerb} function applies the mutation onto local storage.
-
-One major challenge we encountered is that Cassandra does \textit{not} provide an easy way to fetch users' requests and modify their mutations.
+Specifically, \textsc{doVerb} function applies the mutation onto local storage. One major challenge we encountered is that Cassandra does \textit{not} provide an easy way to fetch users' requests and modify their mutations.
 We have to figure out a way to construct a new mutation when we need to add new fields such as timestamp and coded elements.
 Recall that we do not want to introduce new data structure, so we choose to use Cassandra's column family data model (i.e., an ordered collection of rows) to store the List variable at each server.
 %\vspace{3pt}
@@ -240,14 +248,14 @@ CassandrEAS uses BackBlaze Reed-Solomon Code.%\footnote{https://github.com/Backb
 	\vspace{-10pt}
 \end{figure*}
 %\section{CassandrEAS: Evaluation}
-\vspace{-3pt}
+\vspace{-5pt}
 
 \subsection{Evaluation}
 \label{s:evaluation}
 \vspace{-3pt}
 
-We evaluate the performance of CassandrEAS by comparing it to the vanilla Cassandra (version 3.11). 
-Cassandra-All requires the coordinator to hear from every server, whereas Cassandra-Quorum only requires to hear from a majority quorum of servers.
+We evaluate the performance of CassandrEAS by comparing it to vanilla Cassandra (version 3.11). 
+Cassandra-All requires the coordinator to hear from every server, whereas Cassandra-Quorum only requires to hear from a majority.
 
 %and Cass-ABD. Cass-ABD replaced Cassandra's replication protocol with ABD \cite{ABD96}, which is a storage algorithm based on logical timestamps.
 %We present the highlights of our evaluation results below:
@@ -308,4 +316,4 @@ This is impossible to achieve in a distributed system where clock drift is inevi
 \vspace{-3pt}
 \section{Summary}
 
-Strong consistency, storage efficiency, and availability are three key features for NoSQL KV-stores. We demonstrated that through  CassandrEAS -- erasure coding can be used to reduce storage cost while incurring moderate performance penalty. One interesting future work is to investigate how to apply \treasmod{} and \oreas{} in other NoSQL KV-stores, or to Cassandra to support transaction-related primitives beyond the simple read or write.\vspace{-3pt}
+Strong consistency, storage efficiency, and availability are three key features for NoSQL KV-stores. We demonstrated that through  CassandrEAS -- erasure coding can be used to reduce storage cost while incurring moderate performance penalty. One interesting future work is to investigate how to apply \treasmod{} and \oreas{} in other NoSQL KV-stores, or to Cassandra to support transaction-related primitives.\vspace{-3pt}

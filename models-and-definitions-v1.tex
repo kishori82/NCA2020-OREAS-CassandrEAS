@@ -85,8 +85,8 @@ which measures the size of the messages used during $\op$.
 We define the total storage cost as the size of the
 data stored \textit{across all servers}, at any point during the execution of the algorithm. The
 communication cost associated with a read or write operation is the size of the total data transmitted in the messages sent as part of the operation. We assume that metadata,
-such as version number, process ID, etc. used by various operations is of negligible size, and therefore,  ignore in the calculation of storage and communication cost. Further, we normalize
-both the costs with respect to the size of the value v; in other words, we compute the costs
+such as version number, process ID, etc. used by various operations is of negligible size. Further, we normalize
+both the costs w.r.t. to the size of the value v; in other words, we compute the costs
 assuming that v has size 1 unit.
 %\lewis{This is repetitive? Didn't we already discuss this before? Second paragraph of this section.}
 %\blue{Yes, now removed}
